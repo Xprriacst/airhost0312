@@ -4,15 +4,10 @@ import { env } from '../../config/env';
 // Initialisation de la base Airtable
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
-// Service pour gérer les conversations dans Airtable
 const airtableConversationService = {
-  /**
-   * Récupère les conversations associées à une propriété donnée.
-   * @param propertyId - L'ID de la propriété à rechercher.
-   * @returns Une liste de conversations formatées.
-   */
   async fetchConversations(propertyId: string) {
     try {
+      console.log('➡️ Requête pour les conversations de la propriété ID:', propertyId); // Log ajouté
       const records = await base('Conversations')
         .select({
           filterByFormula: `{Properties} = '${propertyId}'`,
@@ -20,7 +15,9 @@ const airtableConversationService = {
         })
         .all();
 
-      return records.map((record) => ({
+      console.log('✅ Réponse Airtable :', records); // Log ajouté
+
+      const formattedRecords = records.map((record) => ({
         id: record.id,
         guestName: record.get('Guest Name') || 'Nom inconnu',
         guestEmail: record.get('Guest Email') || '',
@@ -32,54 +29,20 @@ const airtableConversationService = {
           const rawMessages = record.get('Messages');
           try {
             return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
-          } catch {
-            console.warn(`Invalid Messages format for record ${record.id}`);
+          } catch (error) {
+            console.warn(`⚠️ Format invalide pour les messages du record ID ${record.id}:`, error); // Log ajouté
             return [];
           }
         })(),
       }));
+
+      console.log('✅ Conversations formatées:', formattedRecords); // Log ajouté
+      return formattedRecords;
     } catch (error) {
-      console.error('Erreur lors de la récupération des conversations :', error);
+      console.error('❌ Erreur lors de la récupération des conversations :', error); // Log ajouté
       throw new Error('Impossible de récupérer les conversations.');
-    }
-  },
-
-  /**
-   * Ajoute une nouvelle conversation dans Airtable.
-   * @param conversationData - Les données de la conversation à ajouter.
-   * @returns La conversation créée avec son ID.
-   */
-  async addConversation(conversationData: Record<string, any>) {
-    try {
-      const createdRecord = await base('Conversations').create({
-        fields: conversationData,
-      });
-
-      return {
-        id: createdRecord.id,
-        ...createdRecord.fields,
-      };
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la conversation :', error);
-      throw new Error('Impossible d\'ajouter la conversation.');
-    }
-  },
-
-  /**
-   * Supprime une conversation de Airtable.
-   * @param conversationId - L'ID de la conversation à supprimer.
-   * @returns Un objet indiquant le succès de l'opération.
-   */
-  async deleteConversation(conversationId: string) {
-    try {
-      await base('Conversations').destroy(conversationId);
-      return { success: true };
-    } catch (error) {
-      console.error('Erreur lors de la suppression de la conversation :', error);
-      throw new Error('Impossible de supprimer la conversation.');
     }
   },
 };
 
-// Export par défaut pour utilisation dans d'autres modules
 export default airtableConversationService;
