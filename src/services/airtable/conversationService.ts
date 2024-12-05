@@ -1,81 +1,65 @@
-import { base } from './config';
-import { createMockConversation } from './mockData';
-import { mapRecordToConversation } from './mappers';
-import { handleServiceError } from '../../utils/error';
+import Airtable from 'airtable';
+import { env } from '../../config/env';
 
-export const conversationService = {
-  /**
-   * Fetches all conversations associated with a given property ID.
-   * @param propertyId - The ID of the property.
-   * @returns An array of conversations.
-   */
+const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
+
+export const airtableConversationService = {
   async fetchConversations(propertyId: string) {
     try {
-      if (!base) {
-        console.warn('Airtable is not configured. Returning mock data.');
-        return [createMockConversation(propertyId)];
-      }
-
-      console.log(`Fetching conversations for property ID: ${propertyId}`);
-
       const records = await base('Conversations')
         .select({
-          filterByFormula: `{Properties} = '${propertyId}'`, // Airtable formula to filter by property
+          filterByFormula: `{Properties} = '${propertyId}'`,
+          fields: ['Guest Name', 'Messages', 'Check-in Date', 'Check-out Date', 'Status', 'Platform'],
         })
         .all();
 
-      console.log(`Fetched ${records.length} conversations for property ID: ${propertyId}`);
-      return records.map((record) => mapRecordToConversation(record, propertyId));
+      return records.map((record) => ({
+        id: record.id,
+        guestName: record.get('Guest Name') || 'Nom inconnu',
+        guestEmail: record.get('Guest Email') || '',
+        checkIn: record.get('Check-in Date') || '',
+        checkOut: record.get('Check-out Date') || '',
+        status: record.get('Status') || 'Inconnu',
+        platform: record.get('Platform') || 'Non spécifié',
+        messages: (() => {
+          const rawMessages = record.get('Messages');
+          try {
+            return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
+          } catch {
+            console.warn(`Invalid Messages format for record ${record.id}`);
+            return [];
+          }
+        })(),
+      }));
     } catch (error) {
-      return handleServiceError(error, 'Conversation.fetchConversations');
+      console.error('Error fetching conversations:', error);
+      throw new Error('Erreur lors de la récupération des conversations.');
     }
   },
 
-  /**
-   * Adds a new conversation to Airtable.
-   * @param conversationData - The data for the new conversation.
-   * @returns The created conversation object.
-   */
   async addConversation(conversationData: Record<string, any>) {
     try {
-      if (!base) {
-        throw new Error('Airtable is not configured');
-      }
+      const createdRecord = await base('Conversations').create({
+        fields: conversationData,
+      });
 
-      console.log('Creating a new conversation with data:', conversationData);
-
-      // Send data directly without the "fields" key
-      const createdRecord = await base('Conversations').create(conversationData);
-
-      console.log('New conversation created with ID:', createdRecord.id);
       return {
         id: createdRecord.id,
         ...createdRecord.fields,
       };
     } catch (error) {
-      return handleServiceError(error, 'Conversation.addConversation');
+      console.error('Error adding conversation:', error);
+      throw new Error('Erreur lors de l\'ajout de la conversation.');
     }
   },
 
-  /**
-   * Deletes a conversation from Airtable.
-   * @param conversationId - The ID of the conversation to delete.
-   * @returns An object indicating success or failure.
-   */
   async deleteConversation(conversationId: string) {
     try {
-      if (!base) {
-        throw new Error('Airtable is not configured');
-      }
-
-      console.log(`Deleting conversation with ID: ${conversationId}`);
-
       await base('Conversations').destroy(conversationId);
-
-      console.log(`Conversation with ID: ${conversationId} has been deleted`);
       return { success: true };
     } catch (error) {
-      return handleServiceError(error, 'Conversation.deleteConversation');
+      console.error('Error deleting conversation:', error);
+      throw new Error('Erreur lors de la suppression de la conversation.');
     }
   },
 };
