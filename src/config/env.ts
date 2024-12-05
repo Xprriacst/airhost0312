@@ -1,19 +1,6 @@
 import { z } from 'zod';
 
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  build: {
-    rollupOptions: {
-      output: {
-        format: 'esm', // Utilisation du format ESM pour permettre import.meta.env
-      },
-    },
-  },
-});
-
-
-// Schema validation for environment variables
+// Validation avec zod pour garantir que les variables sont présentes
 const envSchema = z.object({
   airtable: z.object({
     apiKey: z.string().min(1, 'Airtable API key is required'),
@@ -24,17 +11,26 @@ const envSchema = z.object({
   }),
 });
 
-// Function to get environment variables based on context
+// Fonction pour récupérer les variables d'environnement
 const getEnvVar = (key: string): string => {
-  // Node.js context (Netlify functions)
+  try {
+    // Contexte Vite
+    if (typeof import.meta !== 'undefined' && import.meta.env) {
+      return import.meta.env[key] || '';
+    }
+  } catch {
+    // Ignorer si import.meta.env n'est pas disponible
+  }
+
+  // Contexte Node.js (Netlify Functions)
   if (typeof process !== 'undefined' && process.env) {
     return process.env[key] || '';
   }
-  // Browser context (Vite)
-  return import.meta.env[key] || '';
+
+  return '';
 };
 
-// Environment variables object
+// Variables d'environnement
 export const env = {
   airtable: {
     apiKey: getEnvVar('AIRTABLE_API_KEY') || getEnvVar('VITE_AIRTABLE_API_KEY'),
@@ -45,7 +41,7 @@ export const env = {
   },
 };
 
-// Validate environment configuration
+// Validation des variables d'environnement
 const validateEnv = () => {
   try {
     envSchema.parse(env);
