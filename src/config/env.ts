@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        format: 'esm', // Utilisation du format ESM pour permettre import.meta.env
+      },
+    },
+  },
+});
+
+
 // Schema validation for environment variables
 const envSchema = z.object({
   airtable: z.object({
