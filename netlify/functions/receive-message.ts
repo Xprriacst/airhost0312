@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { z } from 'zod';
 import { propertyService } from '../../src/services/airtable/propertyService';
-import { conversationService } from '../../src/services/airtable/conversationService';
+import { airtableConversationService } from '../../src/services/airtable/conversationService';
 import { aiService } from '../../src/services/ai/aiService';
 
 // Schema validation for incoming webhook
