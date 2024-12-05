@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { z } from 'zod';
 import { propertyService } from '../../src/services/airtable/propertyService';
-import { airtableConversationService } from '../../src/services/airtable/conversationService';
+import airtableConversationService from '../../src/services/airtable/conversationService';
 import { aiService } from '../../src/services/ai/aiService';
 
 // Schema validation for incoming webhook
@@ -15,7 +15,6 @@ const messageSchema = z.object({
 });
 
 export const handler: Handler = async (event) => {
-  // Only allow POST method
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -24,13 +23,11 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Parse and validate the incoming request body
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
 
     console.log('Parsed Request Data:', data);
 
-    // Fetch property details from Airtable
     console.log(`Fetching property with ID: ${data.propertyId}`);
     const property = await propertyService.getProperties().then((properties) =>
       properties.find((p) => p.id === data.propertyId)
@@ -46,7 +43,6 @@ export const handler: Handler = async (event) => {
 
     console.log('Property Found:', property);
 
-    // Fetch or create a conversation
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
     let conversation = conversations.find(
       (c) =>
@@ -81,13 +77,12 @@ export const handler: Handler = async (event) => {
         timestamp: data.timestamp || new Date().toISOString(),
         sender: data.guestName,
       });
-      // Update conversation with new messages
+
       await airtableConversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
     }
 
-    // Generate AI response if the property has auto-pilot enabled
     if (property.autoPilot) {
       console.log('Auto-pilot is enabled. Generating AI response...');
       const aiResponse = await aiService.generateResponse(
@@ -102,9 +97,6 @@ export const handler: Handler = async (event) => {
       );
 
       console.log('AI Response:', aiResponse);
-
-      // Send AI response back to the guest via appropriate platform (e.g., WhatsApp, SMS)
-      // Implement this logic as needed
     }
 
     return {
