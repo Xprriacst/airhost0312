@@ -9,6 +9,8 @@ const messageSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
   guestName: z.string().min(1, 'Guest Name is required'),
   guestEmail: z.string().email('Valid email is required'),
+  checkInDate: z.string().min(1, 'Check-in Date is required'), // Nouveau champ
+  checkOutDate: z.string().min(1, 'Check-out Date is required'), // Nouveau champ
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
   timestamp: z.string().optional(), // ISO timestamp
@@ -55,6 +57,8 @@ export const handler: Handler = async (event) => {
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
+        'Check-in Date': data.checkInDate, // Nouveau champ
+        'Check-out Date': data.checkOutDate, // Nouveau champ
         Status: 'Active',
         Platform: data.platform,
         Messages: JSON.stringify([
