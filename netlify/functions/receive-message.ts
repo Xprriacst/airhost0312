@@ -8,9 +8,9 @@ import { aiService } from '../../src/services/ai/aiService';
 const messageSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
   guestName: z.string().min(1, 'Guest Name is required'),
-  guestEmail: z.string().email('Valid email is required'),
-  checkInDate: z.string().min(1, 'Check-in Date is required'), // Nouveau champ
-  checkOutDate: z.string().min(1, 'Check-out Date is required'), // Nouveau champ
+  guestEmail: z.string().email('A valid email is required'),
+  checkInDate: z.string().min(1, 'Check-in Date is required'),
+  checkOutDate: z.string().min(1, 'Check-out Date is required'),
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
   timestamp: z.string().optional(), // ISO timestamp
@@ -27,6 +27,8 @@ export const handler: Handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
+    console.log('Data after parsing:', data);
+
 
     console.log('Parsed Request Data:', data);
 
