@@ -1,79 +1,99 @@
 import Airtable from 'airtable';
 import { env } from '../../config/env';
 
-// Initialize Airtable base
+// Initialisation de la base Airtable
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
 const airtableConversationService = {
   async fetchConversations(propertyId: string) {
     try {
-      console.log('➡️ Fetching conversations for property ID:', propertyId);
+      console.log('➡️ Récupération des conversations pour la propriété ID:', propertyId);
       const records = await base('Conversations')
         .select({
           filterByFormula: `{Properties} = '${propertyId}'`,
-          fields: ['Guest Name', 'Guest Email', 'Messages', 'Check-in Date', 'Check-out Date', 'Status', 'Platform'],
+          fields: [
+            'Guest Name',
+            'Guest Email',
+            'Messages',
+            'Check-in Date',
+            'Check-out Date',
+            'Status',
+            'Platform',
+          ],
         })
         .all();
 
-      console.log('✅ Airtable Response:', records);
+      console.log('✅ Réponse d\'Airtable :', records);
 
       const formattedRecords = records.map((record) => ({
         id: record.id,
-        guestName: record.get('Guest Name') || 'Unknown Name',
+        guestName: record.get('Guest Name') || 'Nom inconnu',
         guestEmail: record.get('Guest Email') || '',
         checkIn: record.get('Check-in Date') || '',
         checkOut: record.get('Check-out Date') || '',
-        status: record.get('Status') || 'Unknown',
-        platform: record.get('Platform') || 'Unspecified',
+        status: record.get('Status') || 'Inconnu',
+        platform: record.get('Platform') || 'Non spécifié',
         messages: (() => {
           const rawMessages = record.get('Messages');
           try {
             return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
           } catch (error) {
-            console.warn(`⚠️ Invalid message format for record ID ${record.id}:`, error);
+            console.warn(`⚠️ Format de messages invalide pour le record ID ${record.id}:`, error);
             return [];
           }
         })(),
       }));
 
-      console.log('✅ Formatted Conversations:', formattedRecords);
+      console.log('✅ Conversations formatées :', formattedRecords);
       return formattedRecords;
     } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
-      throw new Error('Failed to fetch conversations.');
+      console.error('❌ Erreur lors de la récupération des conversations :', error);
+      throw new Error('Impossible de récupérer les conversations.');
     }
   },
 
   async addConversation(conversationData: Record<string, any>) {
     try {
-      console.log('➡️ Adding a new conversation:', conversationData);
-      const createdRecord = await base('Conversations').create({
-        fields: conversationData,
-      });
+      console.log('➡️ Ajout d\'une nouvelle conversation :', conversationData);
+      const createdRecords = await base('Conversations').create([
+        {
+          fields: conversationData,
+        },
+      ]);
 
-      console.log('✅ Conversation Created:', createdRecord);
+      const createdRecord = createdRecords[0];
+
+      console.log('✅ Conversation créée :', createdRecord);
       return {
         id: createdRecord.id,
         ...createdRecord.fields,
       };
     } catch (error) {
-      console.error('❌ Error adding conversation:', error);
-      throw new Error('Failed to add conversation.');
+      console.error('❌ Erreur lors de l\'ajout de la conversation :', error);
+      throw new Error('Impossible d\'ajouter la conversation.');
     }
   },
 
   async updateConversation(conversationId: string, updatedFields: Record<string, any>) {
     try {
-      console.log(`➡️ Updating conversation ID ${conversationId} with fields:`, updatedFields);
-      const updatedRecord = await base('Conversations').update(conversationId, {
-        fields: updatedFields,
-      });
+      console.log(`➡️ Mise à jour de la conversation ID ${conversationId} avec les champs :`, updatedFields);
+      const updatedRecords = await base('Conversations').update([
+        {
+          id: conversationId,
+          fields: updatedFields,
+        },
+      ]);
 
-      console.log('✅ Conversation Updated:', updatedRecord);
-      return updatedRecord;
+      const updatedRecord = updatedRecords[0];
+
+      console.log('✅ Conversation mise à jour :', updatedRecord);
+      return {
+        id: updatedRecord.id,
+        ...updatedRecord.fields,
+      };
     } catch (error) {
-      console.error('❌ Error updating conversation:', error);
-      throw new Error('Failed to update conversation.');
+      console.error('❌ Erreur lors de la mise à jour de la conversation :', error);
+      throw new Error('Impossible de mettre à jour la conversation.');
     }
   },
 };
