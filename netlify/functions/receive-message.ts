@@ -47,7 +47,7 @@ export const handler: Handler = async (event) => {
     console.log('Property Found:', property);
 
     // Fetch or create a conversation
-    const conversations = await conversationService.fetchConversations(data.propertyId);
+    const conversations = await airtableConversationService.fetchConversations(data.propertyId);
     let conversation = conversations.find(
       (c) =>
         c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
@@ -55,7 +55,7 @@ export const handler: Handler = async (event) => {
 
     if (!conversation) {
       console.log('No active conversation found. Creating a new one...');
-      conversation = await conversationService.addConversation({
+      conversation = await airtableConversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
@@ -81,7 +81,10 @@ export const handler: Handler = async (event) => {
         timestamp: data.timestamp || new Date().toISOString(),
         sender: data.guestName,
       });
-      // Update conversation with new message (you might need to implement this)
+      // Update conversation with new messages
+      await airtableConversationService.updateConversation(conversation.id, {
+        Messages: JSON.stringify(messages),
+      });
     }
 
     // Generate AI response if the property has auto-pilot enabled
@@ -92,7 +95,7 @@ export const handler: Handler = async (event) => {
           id: Date.now().toString(),
           text: data.message,
           isUser: false,
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           sender: data.guestName,
         },
         property
