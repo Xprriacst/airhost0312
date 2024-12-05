@@ -1,4 +1,4 @@
-import { airtableConversationService } from './airtable/conversationService';
+import airtableConversationService from './airtable/conversationService';
 
 export const conversationService = {
   async fetchConversations(propertyId: string) {
