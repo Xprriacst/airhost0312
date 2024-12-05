@@ -3,26 +3,65 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { conversationService } from '../services/conversationService';
 
+interface Conversation {
+  id: string;
+  guestName: string;
+  guestEmail: string;
+  messages: { text: string; timestamp: string }[];
+  checkIn: string;
+  checkOut: string;
+}
+
+const validateConversations = (conversations: Conversation[]) => {
+  return conversations.every((conversation) => {
+    const isValid =
+      typeof conversation.id === 'string' &&
+      typeof conversation.guestName === 'string' &&
+      typeof conversation.guestEmail === 'string' &&
+      Array.isArray(conversation.messages) &&
+      conversation.messages.every(
+        (message) =>
+          typeof message.text === 'string' &&
+          typeof message.timestamp === 'string'
+      ) &&
+      typeof conversation.checkIn === 'string' &&
+      typeof conversation.checkOut === 'string';
+
+    if (!isValid) {
+      console.warn('Conversation data validation failed:', conversation);
+    }
+
+    return isValid;
+  });
+};
+
 const Conversations: React.FC = () => {
   const navigate = useNavigate();
   const { propertyId } = useParams();
 
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadConversations = async () => {
       try {
-        console.log('➡️ Chargement des conversations pour la propriété ID:', propertyId); // Log ajouté
-        const data = propertyId 
+        console.log('➡️ Chargement des conversations pour la propriété ID:', propertyId);
+        const data = propertyId
           ? await conversationService.fetchConversations(propertyId)
           : [];
-        console.log('✅ Conversations chargées avec succès:', data); // Log ajouté
-        setConversations(data);
+        console.log('✅ Conversations chargées avec succès:', data);
+
+        // Validation des données
+        const isValid = validateConversations(data);
+        if (!isValid) {
+          console.error('⚠️ Données de conversation invalides détectées !');
+        } else {
+          setConversations(data);
+        }
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        console.error('❌ Erreur lors du chargement des conversations:', errorMessage); // Log ajouté
+        console.error('❌ Erreur lors du chargement des conversations:', errorMessage);
         setError(`Erreur : ${errorMessage}`);
       } finally {
         setLoading(false);
@@ -42,9 +81,7 @@ const Conversations: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-          {error}
-        </div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>
       </div>
     );
   }
@@ -76,7 +113,7 @@ const Conversations: React.FC = () => {
             <button
               key={conversation.id}
               onClick={() => {
-                console.log('🔗 Redirection vers la conversation ID:', conversation.id); // Log ajouté
+                console.log('🔗 Redirection vers la conversation ID:', conversation.id);
                 navigate(`/chat/${conversation.id}`);
               }}
               className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:border-blue-300 transition-colors text-left"
