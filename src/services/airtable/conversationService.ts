@@ -65,4 +65,5 @@ const airtableConversationService = {
   },
 };
 
+// Export par défaut
 export default airtableConversationService;
