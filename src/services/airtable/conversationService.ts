@@ -1,9 +1,10 @@
 import Airtable from 'airtable';
 import { env } from '../../config/env';
 
+// Initialisation de la base Airtable
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
-export const airtableConversationService = {
+const airtableConversationService = {
   async fetchConversations(propertyId: string) {
     try {
       const records = await base('Conversations')
@@ -63,3 +64,5 @@ export const airtableConversationService = {
     }
   },
 };
+
+export default airtableConversationService;
