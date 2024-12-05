@@ -57,7 +57,16 @@ const airtableConversationService = {
       console.log('➡️ Ajout d\'une nouvelle conversation :', conversationData);
       const createdRecords = await base('Conversations').create([
         {
-          fields: conversationData,
+          fields: {
+            'Guest Name': conversationData.guestName,
+            'Guest Email': conversationData.guestEmail,
+            'Check-in Date': conversationData['Check-in Date'],
+            'Check-out Date': conversationData['Check-out Date'],
+            'Messages': conversationData.Messages,
+            'Status': conversationData.Status,
+            'Platform': conversationData.Platform,
+            'Properties': conversationData.Properties,
+          },
         },
       ]);
 
