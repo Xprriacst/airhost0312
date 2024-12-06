@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { conversationService } from '../services/conversationService';
+import airtableConversationService from '../services/airtable/conversationService';
 
 interface Message {
   id: string;
@@ -14,6 +14,11 @@ interface Message {
 interface Conversation {
   id: string;
   guestName?: string;
+  guestEmail?: string;
+  checkIn?: string;
+  checkOut?: string;
+  status?: string;
+  platform?: string;
   messages?: Message[];
 }
 
@@ -34,7 +39,7 @@ const ConversationDetail: React.FC = () => {
 
       try {
         console.log('➡️ Chargement de la conversation ID:', conversationId);
-        const data = await conversationService.fetchConversationById(conversationId);
+        const data = await airtableConversationService.fetchConversationById(conversationId);
         console.log('✅ Conversation récupérée :', data);
         setConversation(data);
       } catch (err) {
@@ -49,9 +54,23 @@ const ConversationDetail: React.FC = () => {
     loadConversation();
   }, [conversationId]);
 
-  if (loading) return <div className="p-6">Chargement...</div>;
-  if (error) return <div className="p-6 text-red-600">{error}</div>;
-  if (!conversation) return <div className="p-6">Aucune conversation trouvée.</div>;
+  if (loading) {
+    return (
+      <div className="p-6">Chargement...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6 text-red-600">{error}</div>
+    );
+  }
+
+  if (!conversation) {
+    return (
+      <div className="p-6">Aucune conversation trouvée.</div>
+    );
+  }
 
   return (
     <div className="p-6">
