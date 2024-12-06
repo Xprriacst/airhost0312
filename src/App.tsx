@@ -4,6 +4,9 @@ import DesktopLayout from './components/DesktopLayout';
 import MobileLayout from './components/MobileLayout';
 import Conversations from './pages/Conversations';
 
+// On importe le nouveau composant
+import ConversationDetail from './pages/ConversationDetail';
+
 const App: React.FC = () => {
   // Détection d'un écran mobile ou non
   const isMobile = window.innerWidth <= 768;
@@ -15,6 +18,8 @@ const App: React.FC = () => {
         <Routes>
           {/* Route pour afficher les conversations d'une propriété en mode mobile */}
           <Route path="/properties/:propertyId/conversations" element={<Conversations />} />
+          {/* Route pour afficher le détail d'une conversation en mode mobile */}
+          <Route path="/chat/:conversationId" element={<ConversationDetail />} />
           {/* Page d'accueil pour mobile */}
           <Route path="/" element={<MobileLayout />} />
         </Routes>
@@ -22,6 +27,8 @@ const App: React.FC = () => {
         <Routes>
           {/* Route pour afficher les conversations d'une propriété en mode desktop */}
           <Route path="/properties/:propertyId/conversations" element={<Conversations />} />
+          {/* Route pour afficher le détail d'une conversation en mode desktop */}
+          <Route path="/chat/:conversationId" element={<ConversationDetail />} />
           {/* Page d'accueil pour desktop */}
           <Route path="/" element={<DesktopLayout />} />
         </Routes>
@@ -31,4 +38,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
