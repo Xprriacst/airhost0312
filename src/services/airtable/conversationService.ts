@@ -52,6 +52,59 @@ const airtableConversationService = {
     }
   },
 
+  async fetchConversationById(conversationId: string) {
+    try {
+      console.log('➡️ Récupération de la conversation par ID:', conversationId);
+      const records = await base('Conversations')
+        .select({
+          filterByFormula: `RECORD_ID() = '${conversationId}'`,
+          fields: [
+            'Guest Name',
+            'Guest Email',
+            'Messages',
+            'Check-in Date',
+            'Check-out Date',
+            'Status',
+            'Platform',
+            'Properties',
+          ],
+          maxRecords: 1,
+        })
+        .all();
+
+      if (records.length === 0) {
+        throw new Error(`Aucune conversation trouvée pour l'ID ${conversationId}`);
+      }
+
+      const record = records[0];
+      const conversation = {
+        id: record.id,
+        guestName: record.get('Guest Name') || 'Nom inconnu',
+        guestEmail: record.get('Guest Email') || '',
+        checkIn: record.get('Check-in Date') || '',
+        checkOut: record.get('Check-out Date') || '',
+        status: record.get('Status') || 'Inconnu',
+        platform: record.get('Platform') || 'Non spécifié',
+        properties: record.get('Properties') || [],
+        messages: (() => {
+          const rawMessages = record.get('Messages');
+          try {
+            return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
+          } catch (error) {
+            console.warn(`⚠️ Format de messages invalide pour le record ID ${record.id}:`, error);
+            return [];
+          }
+        })(),
+      };
+
+      console.log('✅ Conversation récupérée :', conversation);
+      return conversation;
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération de la conversation :', error);
+      throw new Error('Impossible de récupérer la conversation.');
+    }
+  },
+
   async addConversation(conversationData: Record<string, any>) {
     try {
       console.log('➡️ Ajout d\'une nouvelle conversation :', conversationData);
