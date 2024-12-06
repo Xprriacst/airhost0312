@@ -9,11 +9,11 @@ const messageSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
   guestName: z.string().min(1, 'Guest Name is required'),
   guestEmail: z.string().email('A valid email is required'),
-  checkInDate: z.string().optional(),
-  checkOutDate: z.string().optional(),
+  checkInDate: z.string().min(1, 'Check-in Date is required'),
+  checkOutDate: z.string().min(1, 'Check-out Date is required'),
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
-  timestamp: z.string().optional(), // ISO timestamp
+  timestamp: z.string().optional(),
 });
 
 export const handler: Handler = async (event) => {
@@ -41,21 +41,18 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    console.log('Property Found:', property);
-
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
     let conversation = conversations.find(
       (c) => c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
     );
 
     if (!conversation) {
-      console.log('No active conversation found. Creating a new one...');
       conversation = await airtableConversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
-        'Check-in Date': data.checkInDate || null,
-        'Check-out Date': data.checkOutDate || null,
+        'Check-in Date': data.checkInDate,
+        'Check-out Date': data.checkOutDate,
         Status: 'Active',
         Platform: data.platform,
         Messages: JSON.stringify([
@@ -69,7 +66,6 @@ export const handler: Handler = async (event) => {
         ]),
       });
     } else {
-      console.log('Active conversation found. Adding message to conversation...');
       const messages = conversation.messages || [];
       messages.push({
         id: Date.now().toString(),
@@ -82,3 +78,20 @@ export const handler: Handler = async (event) => {
       await airtableConversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        conversationId: conversation.id,
+      }),
+    };
+  } catch (error) {
+    console.error('Error processing request:', error);
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: 'Invalid request' }),
+    };
+  }
+};
