@@ -3,60 +3,27 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { conversationService } from '../services/conversationService';
 
-interface Conversation {
-  id: string;
-  guestName: string;
-  guestEmail: string;
-  messages: { text: string; timestamp: string }[];
-  checkIn: string;
-  checkOut: string;
-}
-
-const validateConversations = (conversations: Conversation[]) => {
-  return conversations.every((conversation) => {
-    const isValid =
-      typeof conversation.id === 'string' &&
-      typeof conversation.guestName === 'string' &&
-      typeof conversation.guestEmail === 'string' &&
-      Array.isArray(conversation.messages) &&
-      conversation.messages.every(
-        (message) =>
-          typeof message.text === 'string' &&
-          typeof message.timestamp === 'string'
-      ) &&
-      typeof conversation.checkIn === 'string' &&
-      typeof conversation.checkOut === 'string';
-
-    if (!isValid) {
-      console.warn('⚠️ Validation échouée pour la conversation suivante :', conversation);
-    }
-
-    return isValid;
-  });
-};
-
 const Conversations: React.FC = () => {
   const navigate = useNavigate();
   const { propertyId } = useParams();
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadConversations = async () => {
       try {
-        const data = propertyId
+        console.log('➡️ Chargement des conversations pour la propriété ID:', propertyId); // Log ajouté
+        const data = propertyId 
           ? await conversationService.fetchConversations(propertyId)
           : [];
-        const isValid = validateConversations(data);
-        if (!isValid) {
-          console.error('⚠️ Données de conversation invalides détectées.');
-        } else {
-          setConversations(data);
-        }
+        console.log('✅ Conversations chargées avec succès:', data); // Log ajouté
+        setConversations(data);
       } catch (err) {
-        setError(err.message || 'Erreur inconnue');
+        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
+        console.error('❌ Erreur lors du chargement des conversations:', errorMessage); // Log ajouté
+        setError(`Erreur : ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -75,7 +42,9 @@ const Conversations: React.FC = () => {
   if (error) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">{error}</div>
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+          {error}
+        </div>
       </div>
     );
   }
@@ -106,12 +75,15 @@ const Conversations: React.FC = () => {
           conversations.map((conversation) => (
             <button
               key={conversation.id}
-              onClick={() => navigate(`/chat/${conversation.id}`)}
+              onClick={() => {
+                console.log('🔗 Redirection vers la conversation ID:', conversation.id); // Log ajouté
+                navigate(`/chat/${conversation.id}`);
+              }}
               className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:border-blue-300 transition-colors text-left"
             >
               <h3 className="font-medium text-gray-900">{conversation.guestName || 'Nom inconnu'}</h3>
               <p className="text-sm text-gray-500">
-                {conversation.checkIn} - {conversation.checkOut}
+                {conversation.messages?.length || 0} messages
               </p>
             </button>
           ))
