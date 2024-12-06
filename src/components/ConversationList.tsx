@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ArrowLeft, MessageSquare, AlertTriangle, Wrench, Package, HelpCircle, AlertOctagon } from 'lucide-react';
 import type { Property, Conversation, EmergencyTag } from '../types';
 
@@ -26,37 +26,12 @@ interface ConversationListProps {
   onBack: () => void;
 }
 
-const validateConversations = (conversations: Conversation[]) => {
-  return conversations.every((conversation) => {
-    const isValid =
-      typeof conversation.id === 'string' &&
-      typeof conversation.guestName === 'string' &&
-      typeof conversation.guestEmail === 'string' &&
-      Array.isArray(conversation.messages) &&
-      typeof conversation.checkIn === 'string' &&
-      typeof conversation.checkOut === 'string';
-
-    if (!isValid) {
-      console.warn('Conversation data validation failed:', conversation);
-    }
-
-    return isValid;
-  });
-};
-
 const ConversationList: React.FC<ConversationListProps> = ({
   property,
   conversations,
   onSelectConversation,
   onBack,
 }) => {
-  useEffect(() => {
-    const isValid = validateConversations(conversations);
-    if (!isValid) {
-      console.error('Invalid conversation data detected!');
-    }
-  }, [conversations]);
-
   const propertyConversations = conversations.filter(c => c.propertyId === property.id);
 
   return (
@@ -122,4 +97,3 @@ const ConversationList: React.FC<ConversationListProps> = ({
 };
 
 export default ConversationList;
-
