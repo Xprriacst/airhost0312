@@ -29,8 +29,8 @@ const airtableConversationService = {
         id: record.id,
         guestName: record.get('Guest Name') || 'Nom inconnu',
         guestEmail: record.get('Guest Email') || '',
-        checkIn: record.get('Check-in Date') || '',
-        checkOut: record.get('Check-out Date') || '',
+        checkIn: record.get('Check-in Date') || null,
+        checkOut: record.get('Check-out Date') || null,
         status: record.get('Status') || 'Inconnu',
         platform: record.get('Platform') || 'Non spécifié',
         messages: (() => {
@@ -60,8 +60,8 @@ const airtableConversationService = {
           fields: {
             'Guest Name': conversationData.guestName,
             'Guest Email': conversationData.guestEmail,
-            'Check-in Date': conversationData['Check-in Date'],
-            'Check-out Date': conversationData['Check-out Date'],
+            'Check-in Date': conversationData.checkInDate || null,
+            'Check-out Date': conversationData.checkOutDate || null,
             'Messages': conversationData.Messages,
             'Status': conversationData.Status,
             'Platform': conversationData.Platform,
