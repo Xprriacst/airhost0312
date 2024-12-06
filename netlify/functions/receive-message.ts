@@ -4,7 +4,7 @@ import { propertyService } from '../../src/services/airtable/propertyService';
 import airtableConversationService from '../../src/services/airtable/conversationService';
 import { aiService } from '../../src/services/ai/aiService';
 
-// Schema validation for incoming webhook
+// Schéma de validation avec Zod
 const messageSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
   guestName: z.string().min(1, 'Guest Name is required'),
@@ -13,45 +13,52 @@ const messageSchema = z.object({
   checkOutDate: z.string().min(1, 'Check-out Date is required'),
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
-  timestamp: z.string().optional(), // ISO timestamp
+  timestamp: z.string().optional(),
 });
 
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
+    console.warn(`❌ Méthode HTTP non autorisée: ${event.httpMethod}`);
     return {
       statusCode: 405,
       body: JSON.stringify({ error: 'Method not allowed' }),
     };
   }
 
+  console.log('➡️ Réception d’un message via webhook');
+
   try {
     const body = JSON.parse(event.body || '{}');
+    console.log('🔍 Corps de la requête brute:', body);
+
     const data = messageSchema.parse(body);
+    console.log('✅ Données validées par Zod:', data);
 
-    console.log('Parsed Request Data:', data);
-
-    const property = await propertyService.getProperties().then((properties) =>
-      properties.find((p) => p.id === data.propertyId)
-    );
+    // Recherche de la propriété
+    const properties = await propertyService.getProperties();
+    const property = properties.find((p) => p.id === data.propertyId);
 
     if (!property) {
-      console.error(`Property with ID ${data.propertyId} not found`);
+      console.error(`❌ Propriété avec l'ID ${data.propertyId} introuvable`);
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Property not found' }),
       };
     }
 
-    console.log('Property Found:', property);
+    console.log('🏠 Propriété trouvée:', property);
 
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
+    console.log(`🔍 ${conversations.length} conversation(s) trouvée(s) pour cette propriété.`);
+
     let conversation = conversations.find(
       (c) =>
-        c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
+        c.guestEmail === data.guestEmail &&
+        new Date(c.checkOut) >= new Date()
     );
 
     if (!conversation) {
-      console.log('No active conversation found. Creating a new one...');
+      console.log('➕ Aucune conversation active trouvée. Création d’une nouvelle...');
       conversation = await airtableConversationService.addConversation({
         'Properties': [data.propertyId],
         'Guest Name': data.guestName,
@@ -70,8 +77,9 @@ export const handler: Handler = async (event) => {
           },
         ]),
       });
+      console.log('✅ Nouvelle conversation créée:', conversation.id);
     } else {
-      console.log('Active conversation found. Adding message to conversation...');
+      console.log('♻️ Conversation active trouvée. Ajout du message...');
       const messages = conversation.messages || [];
       messages.push({
         id: Date.now().toString(),
@@ -84,10 +92,11 @@ export const handler: Handler = async (event) => {
       await airtableConversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
+      console.log('✅ Message ajouté à la conversation:', conversation.id);
     }
 
     if (property.autoPilot) {
-      console.log('Auto-pilot is enabled. Generating AI response...');
+      console.log('🤖 Auto-pilot activé. Génération de la réponse AI...');
       const aiResponse = await aiService.generateResponse(
         {
           id: Date.now().toString(),
@@ -98,8 +107,7 @@ export const handler: Handler = async (event) => {
         },
         property
       );
-
-      console.log('AI Response:', aiResponse);
+      console.log('🤖 Réponse AI générée:', aiResponse);
     }
 
     return {
@@ -110,7 +118,7 @@ export const handler: Handler = async (event) => {
       }),
     };
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('❌ Erreur lors du traitement de la requête:', error);
     return {
       statusCode: 400,
       body: JSON.stringify({
