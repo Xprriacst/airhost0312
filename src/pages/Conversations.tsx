@@ -46,13 +46,9 @@ const Conversations: React.FC = () => {
   useEffect(() => {
     const loadConversations = async () => {
       try {
-        console.log('➡️ Chargement des conversations pour la propriété ID :', propertyId);
         const data = propertyId
           ? await conversationService.fetchConversations(propertyId)
           : [];
-        console.log('✅ Conversations chargées avec succès :', data);
-
-        // Validation des données
         const isValid = validateConversations(data);
         if (!isValid) {
           console.error('⚠️ Données de conversation invalides détectées.');
@@ -60,9 +56,7 @@ const Conversations: React.FC = () => {
           setConversations(data);
         }
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        console.error('❌ Erreur lors du chargement des conversations :', errorMessage);
-        setError(`Erreur : ${errorMessage}`);
+        setError(err.message || 'Erreur inconnue');
       } finally {
         setLoading(false);
       }
@@ -112,15 +106,12 @@ const Conversations: React.FC = () => {
           conversations.map((conversation) => (
             <button
               key={conversation.id}
-              onClick={() => {
-                console.log('🔗 Redirection vers la conversation ID :', conversation.id);
-                navigate(`/chat/${conversation.id}`);
-              }}
+              onClick={() => navigate(`/chat/${conversation.id}`)}
               className="w-full bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:border-blue-300 transition-colors text-left"
             >
               <h3 className="font-medium text-gray-900">{conversation.guestName || 'Nom inconnu'}</h3>
               <p className="text-sm text-gray-500">
-                {conversation.messages?.length || 0} messages
+                {conversation.checkIn} - {conversation.checkOut}
               </p>
             </button>
           ))
