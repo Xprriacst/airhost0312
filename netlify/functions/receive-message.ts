@@ -13,7 +13,7 @@ const messageSchema = z.object({
   checkOutDate: z.string().min(1, 'Check-out Date is required'),
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
-  timestamp: z.string().optional(),
+  timestamp: z.string().optional(), // ISO timestamp
 });
 
 export const handler: Handler = async (event) => {
@@ -27,6 +27,7 @@ export const handler: Handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
+
     console.log('Parsed Request Data:', data);
 
     const property = await propertyService.getProperties().then((properties) =>
@@ -41,21 +42,25 @@ export const handler: Handler = async (event) => {
       };
     }
 
+    console.log('Property Found:', property);
+
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
     let conversation = conversations.find(
-      (c) => c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
+      (c) =>
+        c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
     );
 
     if (!conversation) {
+      console.log('No active conversation found. Creating a new one...');
       conversation = await airtableConversationService.addConversation({
-        Properties: [data.propertyId],
+        'Properties': [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
         'Check-in Date': data.checkInDate,
         'Check-out Date': data.checkOutDate,
-        Status: 'Active',
-        Platform: data.platform,
-        Messages: JSON.stringify([
+        'Status': 'Active',
+        'Platform': data.platform,
+        'Messages': JSON.stringify([
           {
             id: Date.now().toString(),
             text: data.message,
@@ -66,6 +71,7 @@ export const handler: Handler = async (event) => {
         ]),
       });
     } else {
+      console.log('Active conversation found. Adding message to conversation...');
       const messages = conversation.messages || [];
       messages.push({
         id: Date.now().toString(),
@@ -80,6 +86,22 @@ export const handler: Handler = async (event) => {
       });
     }
 
+    if (property.autoPilot) {
+      console.log('Auto-pilot is enabled. Generating AI response...');
+      const aiResponse = await aiService.generateResponse(
+        {
+          id: Date.now().toString(),
+          text: data.message,
+          isUser: false,
+          timestamp: new Date().toISOString(),
+          sender: data.guestName,
+        },
+        property
+      );
+
+      console.log('AI Response:', aiResponse);
+    }
+
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -91,7 +113,9 @@ export const handler: Handler = async (event) => {
     console.error('Error processing request:', error);
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: 'Invalid request' }),
+      body: JSON.stringify({
+        error: error instanceof Error ? error.message : 'Invalid request',
+      }),
     };
   }
 };
