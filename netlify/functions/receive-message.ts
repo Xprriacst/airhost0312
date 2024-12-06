@@ -9,8 +9,8 @@ const messageSchema = z.object({
   propertyId: z.string().min(1, 'Property ID is required'),
   guestName: z.string().min(1, 'Guest Name is required'),
   guestEmail: z.string().email('A valid email is required'),
-  checkInDate: z.string().min(1, 'Check-in Date is required'),
-  checkOutDate: z.string().min(1, 'Check-out Date is required'),
+  checkInDate: z.string().optional(),
+  checkOutDate: z.string().optional(),
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
   timestamp: z.string().optional(), // ISO timestamp
@@ -27,12 +27,8 @@ export const handler: Handler = async (event) => {
   try {
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
-    console.log('Data after parsing:', data);
-
-
     console.log('Parsed Request Data:', data);
 
-    console.log(`Fetching property with ID: ${data.propertyId}`);
     const property = await propertyService.getProperties().then((properties) =>
       properties.find((p) => p.id === data.propertyId)
     );
@@ -49,8 +45,7 @@ export const handler: Handler = async (event) => {
 
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
     let conversation = conversations.find(
-      (c) =>
-        c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
+      (c) => c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
     );
 
     if (!conversation) {
@@ -59,8 +54,8 @@ export const handler: Handler = async (event) => {
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
-        'Check-in Date': data.checkInDate, // Nouveau champ
-        'Check-out Date': data.checkOutDate, // Nouveau champ
+        'Check-in Date': data.checkInDate || null,
+        'Check-out Date': data.checkOutDate || null,
         Status: 'Active',
         Platform: data.platform,
         Messages: JSON.stringify([
@@ -87,38 +82,3 @@ export const handler: Handler = async (event) => {
       await airtableConversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
-    }
-
-    if (property.autoPilot) {
-      console.log('Auto-pilot is enabled. Generating AI response...');
-      const aiResponse = await aiService.generateResponse(
-        {
-          id: Date.now().toString(),
-          text: data.message,
-          isUser: false,
-          timestamp: new Date().toISOString(),
-          sender: data.guestName,
-        },
-        property
-      );
-
-      console.log('AI Response:', aiResponse);
-    }
-
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        conversationId: conversation.id,
-      }),
-    };
-  } catch (error) {
-    console.error('Error processing request:', error);
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        error: error instanceof Error ? error.message : 'Invalid request',
-      }),
-    };
-  }
-};
