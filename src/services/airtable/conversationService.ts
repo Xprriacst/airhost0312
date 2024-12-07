@@ -5,7 +5,7 @@ const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.bas
 
 const airtableConversationService = {
   async fetchConversations(propertyId: string, guestEmail: string) {
-    console.log(`➡️ Recherche des conversations pour propertyId=${propertyId}, guestEmail=${guestEmail}`);
+    console.log(`➡️ Fetching conversations for propertyId=${propertyId}, guestEmail=${guestEmail}`);
     try {
       const records = await base('Conversations')
         .select({
@@ -21,63 +21,61 @@ const airtableConversationService = {
         .all();
 
       if (records.length === 0) {
-        console.log(`⚠️ Aucune conversation trouvée pour propertyId=${propertyId} et guestEmail=${guestEmail}`);
-      } else {
-        console.log(`✅ Conversations trouvées :`, records.map((r) => r.fields));
+        console.log(`⚠️ No conversations found for propertyId=${propertyId} and guestEmail=${guestEmail}`);
+        return [];
       }
+
+      console.log('✅ Conversations found:', records.map((r) => r.fields));
 
       return records.map((record) => ({
         id: record.id,
-        guestName: record.get('Guest Name') || 'Nom inconnu',
+        guestName: record.get('Guest Name') || 'Unknown',
         guestEmail: record.get('Guest Email') || '',
-        status: record.get('Status') || 'Inconnu',
-        platform: record.get('Platform') || 'Non spécifié',
+        status: record.get('Status') || 'Unknown',
+        platform: record.get('Platform') || 'Not specified',
         messages: (() => {
           const rawMessages = record.get('Messages');
           try {
             return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
           } catch (error) {
-            console.warn(`⚠️ Format de messages invalide pour le record ID ${record.id}:`, error);
+            console.warn(`⚠️ Invalid message format for record ID ${record.id}:`, error);
             return [];
           }
         })(),
       }));
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des conversations :', error);
-      throw new Error('Impossible de récupérer les conversations.');
+      console.error('❌ Error fetching conversations:', error);
+      throw new Error('Failed to fetch conversations.');
     }
   },
 
   async updateConversation(conversationId: string, data: Record<string, any>) {
-    console.log('➡️ Mise à jour de la conversation ID:', conversationId);
-    console.log('Données envoyées pour mise à jour :', data);
+    console.log('➡️ Updating conversation ID:', conversationId);
     try {
       const updatedRecord = await base('Conversations').update(conversationId, data);
-
-      console.log('✅ Conversation mise à jour avec succès :', updatedRecord.fields);
+      console.log('✅ Conversation updated successfully:', updatedRecord.fields);
       return {
         id: updatedRecord.id,
         ...updatedRecord.fields,
       };
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour de la conversation :', error);
-      throw new Error('Impossible de mettre à jour la conversation.');
+      console.error('❌ Error updating conversation:', error);
+      throw new Error('Failed to update conversation.');
     }
   },
 
   async addConversation(conversationData: Record<string, any>) {
-    console.log('➡️ Création d\'une nouvelle conversation avec les données :', conversationData);
+    console.log('➡️ Creating a new conversation:', conversationData);
     try {
       const createdRecord = await base('Conversations').create(conversationData);
-
-      console.log('✅ Nouvelle conversation créée :', createdRecord.fields);
+      console.log('✅ New conversation created:', createdRecord.fields);
       return {
         id: createdRecord.id,
         ...createdRecord.fields,
       };
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la conversation :', error);
-      throw new Error('Impossible de créer la conversation.');
+      console.error('❌ Error creating conversation:', error);
+      throw new Error('Failed to create conversation.');
     }
   },
 };
