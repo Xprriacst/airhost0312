@@ -5,12 +5,12 @@ import type { Message } from '../../types';
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
 const airtableConversationService = {
-  async fetchConversations(propertyId: string) {
+  async fetchConversations(propertyId: string, guestEmail: string) {
     try {
-      console.log('➡️ Récupération des conversations pour la propriété ID:', propertyId);
+      console.log('➡️ Récupération des conversations pour la propriété ID:', propertyId, 'et email:', guestEmail);
       const records = await base('Conversations')
         .select({
-          filterByFormula: `{Properties} = '${propertyId}'`,
+          filterByFormula: `AND({Properties} = '${propertyId}', {Guest Email} = '${guestEmail}')`,
           fields: [
             'Guest Name',
             'Guest Email',
