@@ -24,15 +24,13 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Log the raw request body for debugging
     console.log('➡️ Corps de la requête brute :', event.body);
 
-    // Parse and validate the incoming body
+    // Validate and parse the incoming data
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
     console.log('➡️ Données validées après parsing :', data);
 
-    // Ensure guestEmail is present
     if (!data.guestEmail) {
       console.error('❌ guestEmail est manquant ou indéfini :', data);
       return {
@@ -55,7 +53,7 @@ export const handler: Handler = async (event) => {
     }
     console.log('✅ Propriété trouvée :', property);
 
-    // Fetch conversations associated with the property and guestEmail
+    // Fetch conversations for the property and guest email
     console.log(
       `➡️ Recherche des conversations pour propertyId=${data.propertyId}, guestEmail=${data.guestEmail}`
     );
@@ -65,11 +63,14 @@ export const handler: Handler = async (event) => {
     );
     console.log('Conversations récupérées :', conversations);
 
-    // Check for an active conversation
+    // Check for an active conversation in the correct date range
     let conversation = conversations.find((c) => {
       const isActive =
-        c.status === 'Active' && new Date(c.checkOut).getTime() >= Date.now();
+        new Date(c.checkIn).getTime() <= Date.now() && // checkIn is past or now
+        new Date(c.checkOut).getTime() >= Date.now() && // checkOut is in the future
+        c.status === 'Active'; // Status is Active
       console.log('Comparaison des dates pour conversation:', {
+        checkIn: new Date(c.checkIn),
         checkOut: new Date(c.checkOut),
         now: new Date(),
         isActive,
