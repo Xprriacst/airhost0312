@@ -15,11 +15,6 @@ const messageSchema = z.object({
   checkOutDate: z.string().optional(),
 });
 
-function formatDateToISO(date: string | Date): string {
-  const parsedDate = new Date(date);
-  return parsedDate.toISOString().split('T')[0];
-}
-
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -35,6 +30,7 @@ export const handler: Handler = async (event) => {
     const data = messageSchema.parse(body);
     console.log('➡️ Données validées après parsing :', data);
 
+    // Recherche de la propriété
     const properties = await propertyService.getProperties();
     const property = properties.find((p) => p.id === data.propertyId);
 
@@ -47,25 +43,20 @@ export const handler: Handler = async (event) => {
     }
     console.log('✅ Propriété trouvée :', property);
 
+    // Récupération des conversations pour cet email et cette propriété
     const conversations = await conversationService.fetchConversations(
       data.propertyId,
       data.guestEmail
     );
     console.log('Conversations récupérées :', conversations);
 
-    const now = Date.now();
-    let conversation = conversations.find((c) => {
-      const isActive =
-        new Date(c.checkIn).getTime() <= now &&
-        new Date(c.checkOut).getTime() >= now &&
-        c.status === 'Active';
-      console.log('Comparaison des dates pour conversation:', { checkIn: c.checkIn, checkOut: c.checkOut, isActive });
-      return isActive;
-    });
+    // Vérification si une conversation existe pour cet email
+    let conversation = conversations.find((c) => c.guestEmail === data.guestEmail);
 
     if (conversation) {
-      console.log('✅ Conversation active trouvée :', conversation);
+      console.log('✅ Conversation existante trouvée :', conversation);
 
+      // Ajouter le message à la conversation existante
       const messages = Array.isArray(conversation.messages)
         ? conversation.messages
         : [];
@@ -77,33 +68,20 @@ export const handler: Handler = async (event) => {
         sender: data.guestName,
       });
 
+      // Mise à jour de la conversation
       await conversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
 
       console.log('✅ Message ajouté à la conversation existante :', conversation.id);
     } else {
-      console.log('⚠️ Aucune conversation active trouvée. Création d\'une nouvelle conversation.');
+      console.log('⚠️ Aucune conversation correspondante trouvée. Création d\'une nouvelle conversation.');
 
-      if (!data.checkInDate || !data.checkOutDate) {
-        console.error('❌ Dates manquantes pour créer une nouvelle conversation.');
-        return {
-          statusCode: 400,
-          body: JSON.stringify({
-            error: 'Check-in and check-out dates are required for new conversations',
-          }),
-        };
-      }
-
-      const formattedCheckInDate = formatDateToISO(data.checkInDate);
-      const formattedCheckOutDate = formatDateToISO(data.checkOutDate);
-
+      // Création d'une nouvelle conversation
       conversation = await conversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
-        'Check-in Date': formattedCheckInDate,
-        'Check-out Date': formattedCheckOutDate,
         Status: 'Active',
         Platform: data.platform,
         Messages: JSON.stringify([
