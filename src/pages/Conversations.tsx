@@ -12,7 +12,7 @@ const Conversations: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Simulé : Remplacez par la logique réelle pour récupérer guestEmail
-  const guestEmail = "test@example.com"; // TODO: Dynamiser cet email en fonction du contexte utilisateur
+  const guestEmail = "pirouete@example.com"; // TODO: Dynamiser cet email en fonction du contexte utilisateur
 
   useEffect(() => {
     const loadConversations = async () => {
