@@ -11,16 +11,19 @@ const Conversations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Simulé : Remplacez par la logique réelle pour récupérer guestEmail
+  const guestEmail = "test@example.com"; // TODO: Dynamiser cet email en fonction du contexte utilisateur
+
   useEffect(() => {
     const loadConversations = async () => {
-      if (!propertyId) {
-        setError('Aucun identifiant de propriété fourni.');
+      if (!propertyId || !guestEmail) {
+        setError('Propriété ou email invité manquant.');
         setLoading(false);
         return;
       }
 
       try {
-        const data = await conversationService.fetchConversations(propertyId);
+        const data = await conversationService.fetchConversations(propertyId, guestEmail);
         setConversations(Array.isArray(data) ? data : []);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
@@ -31,7 +34,7 @@ const Conversations: React.FC = () => {
     };
 
     loadConversations();
-  }, [propertyId]);
+  }, [propertyId, guestEmail]);
 
   const handleConversationClick = (conversationId: string) => {
     navigate(`/chat/${conversationId}`);
