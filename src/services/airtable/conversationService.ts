@@ -1,7 +1,7 @@
 import Airtable from 'airtable';
 import { env } from '../../config/env';
+import type { Message } from '../../types';
 
-// Initialisation de la base Airtable
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
 const airtableConversationService = {
@@ -23,8 +23,6 @@ const airtableConversationService = {
         })
         .all();
 
-      console.log('✅ Réponse d\'Airtable :', records);
-
       const formattedRecords = records.map((record) => ({
         id: record.id,
         guestName: record.get('Guest Name') || 'Nom inconnu',
@@ -44,7 +42,6 @@ const airtableConversationService = {
         })(),
       }));
 
-      console.log('✅ Conversations formatées :', formattedRecords);
       return formattedRecords;
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des conversations :', error);
@@ -54,30 +51,10 @@ const airtableConversationService = {
 
   async fetchConversationById(conversationId: string) {
     try {
-      console.log('➡️ Récupération de la conversation par ID:', conversationId);
-      const records = await base('Conversations')
-        .select({
-          filterByFormula: `RECORD_ID() = '${conversationId}'`,
-          fields: [
-            'Guest Name',
-            'Guest Email',
-            'Messages',
-            'Check-in Date',
-            'Check-out Date',
-            'Status',
-            'Platform',
-            'Properties',
-          ],
-          maxRecords: 1,
-        })
-        .all();
+      console.log('➡️ Récupération de la conversation ID:', conversationId);
+      const record = await base('Conversations').find(conversationId);
 
-      if (records.length === 0) {
-        throw new Error(`Aucune conversation trouvée pour l'ID ${conversationId}`);
-      }
-
-      const record = records[0];
-      const conversation = {
+      return {
         id: record.id,
         guestName: record.get('Guest Name') || 'Nom inconnu',
         guestEmail: record.get('Guest Email') || '',
@@ -96,59 +73,17 @@ const airtableConversationService = {
           }
         })(),
       };
-
-      console.log('✅ Conversation récupérée :', conversation);
-      return conversation;
     } catch (error) {
       console.error('❌ Erreur lors de la récupération de la conversation :', error);
       throw new Error('Impossible de récupérer la conversation.');
     }
   },
 
-  async addConversation(conversationData: Record<string, any>) {
+  async updateConversation(conversationId: string, data: Record<string, any>) {
     try {
-      console.log('➡️ Ajout d\'une nouvelle conversation :', conversationData);
-      const createdRecords = await base('Conversations').create([
-        {
-          fields: {
-            'Guest Name': conversationData['Guest Name'],
-            'Guest Email': conversationData['Guest Email'],
-            'Check-in Date': conversationData['Check-in Date'],
-            'Check-out Date': conversationData['Check-out Date'],
-            'Messages': conversationData['Messages'],
-            'Status': conversationData['Status'],
-            'Platform': conversationData['Platform'],
-            'Properties': conversationData['Properties'],
-          },
-        },
-      ]);
+      console.log('➡️ Mise à jour de la conversation ID:', conversationId);
+      const updatedRecord = await base('Conversations').update(conversationId, data);
 
-      const createdRecord = createdRecords[0];
-
-      console.log('✅ Conversation créée :', createdRecord);
-      return {
-        id: createdRecord.id,
-        ...createdRecord.fields,
-      };
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout de la conversation :', error);
-      throw new Error('Impossible d\'ajouter la conversation.');
-    }
-  },
-
-  async updateConversation(conversationId: string, updatedFields: Record<string, any>) {
-    try {
-      console.log(`➡️ Mise à jour de la conversation ID ${conversationId} avec les champs :`, updatedFields);
-      const updatedRecords = await base('Conversations').update([
-        {
-          id: conversationId,
-          fields: updatedFields,
-        },
-      ]);
-
-      const updatedRecord = updatedRecords[0];
-
-      console.log('✅ Conversation mise à jour :', updatedRecord);
       return {
         id: updatedRecord.id,
         ...updatedRecord.fields,
@@ -158,6 +93,32 @@ const airtableConversationService = {
       throw new Error('Impossible de mettre à jour la conversation.');
     }
   },
+
+  async addConversation(conversationData: Record<string, any>) {
+    try {
+      console.log('➡️ Création d\'une nouvelle conversation');
+      const createdRecord = await base('Conversations').create(conversationData);
+
+      return {
+        id: createdRecord.id,
+        ...createdRecord.fields,
+      };
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la conversation :', error);
+      throw new Error('Impossible de créer la conversation.');
+    }
+  },
+
+  async deleteConversation(conversationId: string) {
+    try {
+      console.log('➡️ Suppression de la conversation ID:', conversationId);
+      await base('Conversations').destroy(conversationId);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de la conversation :', error);
+      throw new Error('Impossible de supprimer la conversation.');
+    }
+  }
 };
 
 export default airtableConversationService;
