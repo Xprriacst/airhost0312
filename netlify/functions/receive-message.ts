@@ -1,7 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { z } from 'zod';
 import { propertyService } from '../../src/services/airtable/propertyService';
-import airtableConversationService from '../../src/services/airtable/conversationService';
+import { conversationService } from '../../src/services/conversationService';
 import { aiService } from '../../src/services/ai/aiService';
 
 const messageSchema = z.object({
@@ -38,14 +38,12 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Récupérer toutes les conversations pour cette propriété
-    const conversations = await airtableConversationService.fetchConversations(data.propertyId);
-    
-    // Rechercher une conversation active avec cet email
+    // Récupérer les conversations pour cette propriété et cet e-mail
+    const conversations = await conversationService.fetchConversations(data.propertyId, data.guestEmail);
+
+    // Vérifier s'il existe une conversation active avec cet email
     let conversation = conversations.find(
-      (c) => 
-        c.guestEmail === data.guestEmail && 
-        new Date(c.checkOut) >= new Date()
+      (c) => new Date(c.checkOut) >= new Date()
     );
 
     if (conversation) {
@@ -59,7 +57,7 @@ export const handler: Handler = async (event) => {
         sender: data.guestName,
       });
 
-      await airtableConversationService.updateConversation(conversation.id, {
+      await conversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
 
@@ -76,7 +74,7 @@ export const handler: Handler = async (event) => {
       }
 
       // Créer une nouvelle conversation
-      conversation = await airtableConversationService.addConversation({
+      conversation = await conversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
@@ -138,4 +136,3 @@ export const handler: Handler = async (event) => {
     };
   }
 };
-
