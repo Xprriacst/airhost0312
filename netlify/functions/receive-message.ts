@@ -15,6 +15,11 @@ const messageSchema = z.object({
   checkOutDate: z.string().optional(),
 });
 
+function formatDateToISO(date: string | Date): string {
+  const parsedDate = new Date(date);
+  return parsedDate.toISOString().split('T')[0];
+}
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -26,21 +31,10 @@ export const handler: Handler = async (event) => {
   try {
     console.log('➡️ Corps de la requête brute :', event.body);
 
-    // Validate and parse the incoming data
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
     console.log('➡️ Données validées après parsing :', data);
 
-    if (!data.guestEmail) {
-      console.error('❌ guestEmail est manquant ou indéfini :', data);
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: 'Guest email is required' }),
-      };
-    }
-
-    // Fetch properties and find the relevant one
-    console.log('Fetching properties from Airtable...');
     const properties = await propertyService.getProperties();
     const property = properties.find((p) => p.id === data.propertyId);
 
@@ -53,35 +47,25 @@ export const handler: Handler = async (event) => {
     }
     console.log('✅ Propriété trouvée :', property);
 
-    // Fetch conversations for the property and guest email
-    console.log(
-      `➡️ Recherche des conversations pour propertyId=${data.propertyId}, guestEmail=${data.guestEmail}`
-    );
     const conversations = await conversationService.fetchConversations(
       data.propertyId,
       data.guestEmail
     );
     console.log('Conversations récupérées :', conversations);
 
-    // Check for an active conversation in the correct date range
+    const now = Date.now();
     let conversation = conversations.find((c) => {
       const isActive =
-        new Date(c.checkIn).getTime() <= Date.now() && // checkIn is past or now
-        new Date(c.checkOut).getTime() >= Date.now() && // checkOut is in the future
-        c.status === 'Active'; // Status is Active
-      console.log('Comparaison des dates pour conversation:', {
-        checkIn: new Date(c.checkIn),
-        checkOut: new Date(c.checkOut),
-        now: new Date(),
-        isActive,
-      });
+        new Date(c.checkIn).getTime() <= now &&
+        new Date(c.checkOut).getTime() >= now &&
+        c.status === 'Active';
+      console.log('Comparaison des dates pour conversation:', { checkIn: c.checkIn, checkOut: c.checkOut, isActive });
       return isActive;
     });
 
     if (conversation) {
       console.log('✅ Conversation active trouvée :', conversation);
 
-      // Add the message to the existing conversation
       const messages = Array.isArray(conversation.messages)
         ? conversation.messages
         : [];
@@ -111,13 +95,15 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      // Create a new conversation
+      const formattedCheckInDate = formatDateToISO(data.checkInDate);
+      const formattedCheckOutDate = formatDateToISO(data.checkOutDate);
+
       conversation = await conversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
-        'Check-in Date': data.checkInDate,
-        'Check-out Date': data.checkOutDate,
+        'Check-in Date': formattedCheckInDate,
+        'Check-out Date': formattedCheckOutDate,
         Status: 'Active',
         Platform: data.platform,
         Messages: JSON.stringify([
