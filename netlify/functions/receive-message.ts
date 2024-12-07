@@ -11,7 +11,6 @@ const messageSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty'),
   platform: z.enum(['whatsapp', 'sms', 'email']).default('whatsapp'),
   timestamp: z.string().optional(),
-  // checkInDate et checkOutDate sont optionnels maintenant
   checkInDate: z.string().optional(),
   checkOutDate: z.string().optional(),
 });
@@ -39,15 +38,19 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Recherche d'une conversation existante
+    // Récupérer toutes les conversations pour cette propriété
     const conversations = await airtableConversationService.fetchConversations(data.propertyId);
+    
+    // Rechercher une conversation active avec cet email
     let conversation = conversations.find(
-      (c) => c.guestEmail === data.guestEmail && new Date(c.checkOut) >= new Date()
+      (c) => 
+        c.guestEmail === data.guestEmail && 
+        new Date(c.checkOut) >= new Date()
     );
 
     if (conversation) {
       // Ajouter le message à la conversation existante
-      const messages = conversation.messages || [];
+      const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
       messages.push({
         id: Date.now().toString(),
         text: data.message,
@@ -59,8 +62,10 @@ export const handler: Handler = async (event) => {
       await airtableConversationService.updateConversation(conversation.id, {
         Messages: JSON.stringify(messages),
       });
+
+      console.log('✓ Message ajouté à la conversation existante:', conversation.id);
     } else {
-      // Créer une nouvelle conversation si checkInDate et checkOutDate sont fournis
+      // Vérifier que les dates sont fournies pour une nouvelle conversation
       if (!data.checkInDate || !data.checkOutDate) {
         return {
           statusCode: 400,
@@ -70,15 +75,16 @@ export const handler: Handler = async (event) => {
         };
       }
 
+      // Créer une nouvelle conversation
       conversation = await airtableConversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
         'Check-in Date': data.checkInDate,
         'Check-out Date': data.checkOutDate,
-        Status: 'Active',
-        Platform: data.platform,
-        Messages: JSON.stringify([
+        'Status': 'Active',
+        'Platform': data.platform,
+        'Messages': JSON.stringify([
           {
             id: Date.now().toString(),
             text: data.message,
@@ -88,6 +94,8 @@ export const handler: Handler = async (event) => {
           },
         ]),
       });
+
+      console.log('✓ Nouvelle conversation créée:', conversation.id);
     }
 
     // Générer une réponse AI si l'auto-pilot est activé
@@ -130,3 +138,4 @@ export const handler: Handler = async (event) => {
     };
   }
 };
+
