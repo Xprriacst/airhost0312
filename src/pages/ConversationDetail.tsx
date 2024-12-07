@@ -1,47 +1,60 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send } from 'lucide-react';
-import { conversationService } from '../services/conversationService';
-import { messageService } from '../services/messageService';
+import { ArrowLeft, Send, Zap } from 'lucide-react';
+import { conversationService, messageService, propertyService } from '../services';
 import ChatMessage from '../components/ChatMessage';
-
-interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  sender: string;
-}
+import type { Message, Property } from '../types';
 
 const ConversationDetail: React.FC = () => {
   const { propertyId, conversationId } = useParams();
   const navigate = useNavigate();
   const [conversation, setConversation] = useState<any>(null);
+  const [property, setProperty] = useState<Property | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [isAutoPilot, setIsAutoPilot] = useState(false);
 
   useEffect(() => {
-    const loadConversation = async () => {
-      if (!conversationId) {
-        setError('Conversation ID is missing');
+    const loadData = async () => {
+      if (!conversationId || !propertyId) {
+        setError('Missing required parameters');
         setLoading(false);
         return;
       }
 
       try {
-        const data = await conversationService.fetchConversationById(conversationId);
-        setConversation(data);
+        const [convData, propData] = await Promise.all([
+          conversationService.fetchConversationById(conversationId),
+          propertyService.getPropertyById(propertyId)
+        ]);
+
+        setConversation(convData);
+        setProperty(propData);
+        setIsAutoPilot(propData?.autoPilot || false);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load conversation');
+        setError(err instanceof Error ? err.message : 'Failed to load data');
       } finally {
         setLoading(false);
       }
     };
 
-    loadConversation();
-  }, [conversationId]);
+    loadData();
+  }, [conversationId, propertyId]);
+
+  const handleToggleAutoPilot = async () => {
+    if (!propertyId) return;
+
+    try {
+      const updatedProperty = await propertyService.toggleAutoPilot(propertyId, !isAutoPilot);
+      if (updatedProperty) {
+        setIsAutoPilot(updatedProperty.autoPilot || false);
+      }
+    } catch (err) {
+      console.error('Failed to toggle auto-pilot:', err);
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sending) return;
@@ -57,22 +70,18 @@ const ConversationDetail: React.FC = () => {
     setSending(true);
 
     try {
-      // 1. Add message to conversation in UI
       const updatedMessages = [...(conversation.messages || []), message];
       
-      // 2. Update conversation in Airtable
       await conversationService.updateConversation(conversationId!, {
         Messages: JSON.stringify(updatedMessages)
       });
 
-      // 3. Send message to webhook
       await messageService.sendMessage(
         message,
         conversation.guestEmail,
         propertyId!
       );
 
-      // Update local state
       setConversation(prev => ({
         ...prev,
         messages: updatedMessages
@@ -107,21 +116,36 @@ const ConversationDetail: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="bg-white border-b px-4 py-3">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate(`/properties/${propertyId}/conversations`)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">
-              {conversation?.guestName || 'Guest'}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {conversation?.checkIn && new Date(conversation.checkIn).toLocaleDateString()} - {conversation?.checkOut && new Date(conversation.checkOut).toLocaleDateString()}
-            </p>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(`/properties/${propertyId}/conversations`)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">
+                {conversation?.guestName || 'Guest'}
+              </h1>
+              <p className="text-sm text-gray-500">
+                {conversation?.checkIn && new Date(conversation.checkIn).toLocaleDateString()} - {conversation?.checkOut && new Date(conversation.checkOut).toLocaleDateString()}
+              </p>
+            </div>
           </div>
+          <button
+            onClick={handleToggleAutoPilot}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${
+              isAutoPilot
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-600'
+            }`}
+          >
+            <Zap className={`w-4 h-4 ${isAutoPilot ? 'text-blue-500' : 'text-gray-400'}`} />
+            <span className="text-sm font-medium">
+              {isAutoPilot ? 'Auto-pilot ON' : 'Auto-pilot OFF'}
+            </span>
+          </button>
         </div>
       </div>
 
