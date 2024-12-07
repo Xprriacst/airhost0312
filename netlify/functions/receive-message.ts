@@ -24,17 +24,17 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Log the raw request body
-    console.log('Corps brut de la requête :', event.body);
-
+    // Parse the incoming body
     const body = JSON.parse(event.body || '{}');
+    console.log('➡️ Corps de la requête brute :', body);
+
+    // Validate the incoming data against the schema
     const data = messageSchema.parse(body);
+    console.log('➡️ Données validées après parsing :', data);
 
-    // Log validated data
-    console.log('Données validées après parsing :', data);
-
+    // Check if guestEmail is missing or undefined
     if (!data.guestEmail) {
-      console.error('❌ guestEmail est manquant ou indéfini dans les données validées :', data);
+      console.error('❌ guestEmail est manquant ou indéfini :', data);
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Guest email is required' }),
