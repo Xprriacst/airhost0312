@@ -15,6 +15,8 @@ const messageSchema = z.object({
   checkOutDate: z.string().optional(),
 });
 
+console.log('Corps brut de la requête :', event.body);
+
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
