@@ -11,23 +11,24 @@ const Conversations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Simulé : Remplacez par la logique réelle pour récupérer guestEmail
-  const guestEmail = "pirouete@example.com"; // TODO: Dynamiser cet email en fonction du contexte utilisateur
+  // Simulated guest email (replace with dynamic value in production)
+  const guestEmail = "pirouete@example.com";
 
   useEffect(() => {
     const loadConversations = async () => {
       if (!propertyId || !guestEmail) {
-        setError('Propriété ou email invité manquant.');
+        setError('Property ID or guest email is missing.');
         setLoading(false);
         return;
       }
 
       try {
         const data = await conversationService.fetchConversations(propertyId, guestEmail);
+        console.log('Fetched conversations:', data);
         setConversations(Array.isArray(data) ? data : []);
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
-        setError(`Erreur : ${errorMessage}`);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Error: ${errorMessage}`);
       } finally {
         setLoading(false);
       }
@@ -35,10 +36,6 @@ const Conversations: React.FC = () => {
 
     loadConversations();
   }, [propertyId, guestEmail]);
-
-  const handleConversationClick = (conversationId: string) => {
-    navigate(`/chat/${conversationId}`);
-  };
 
   if (loading) {
     return (
@@ -67,17 +64,15 @@ const Conversations: React.FC = () => {
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Conversations
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900">Conversations</h1>
       </div>
 
       <div className="space-y-4">
         {conversations.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucune conversation</h3>
-            <p className="text-gray-500">Il n'y a pas encore de conversations pour cette propriété.</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No conversations</h3>
+            <p className="text-gray-500">There are no conversations for this property yet.</p>
           </div>
         ) : (
           conversations.map((conversation) => (
@@ -90,7 +85,7 @@ const Conversations: React.FC = () => {
                 <div>
                   <h3 className="font-medium text-gray-900">{conversation.guestName}</h3>
                   <p className="text-sm text-gray-500">
-                    {new Date(conversation.checkIn).toLocaleDateString()} - {new Date(conversation.checkOut).toLocaleDateString()}
+                    {conversation.status}
                   </p>
                 </div>
                 <span className="text-sm text-gray-500">
@@ -99,7 +94,7 @@ const Conversations: React.FC = () => {
               </div>
               {conversation.messages?.length > 0 && (
                 <p className="mt-2 text-sm text-gray-600 line-clamp-1">
-                  Dernier message : {conversation.messages[conversation.messages.length - 1].text}
+                  Last message: {conversation.messages[conversation.messages.length - 1].text}
                 </p>
               )}
             </button>
