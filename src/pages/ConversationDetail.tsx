@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { conversationService } from '../services/conversationService';
+import { messageService } from '../services/messageService';
 import ChatMessage from '../components/ChatMessage';
 
 interface Message {
@@ -19,6 +20,7 @@ const ConversationDetail: React.FC = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const loadConversation = async () => {
@@ -42,7 +44,7 @@ const ConversationDetail: React.FC = () => {
   }, [conversationId]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || sending) return;
 
     const message: Message = {
       id: Date.now().toString(),
@@ -52,13 +54,25 @@ const ConversationDetail: React.FC = () => {
       sender: 'Host'
     };
 
+    setSending(true);
+
     try {
-      // Add message to conversation
+      // 1. Add message to conversation in UI
       const updatedMessages = [...(conversation.messages || []), message];
+      
+      // 2. Update conversation in Airtable
       await conversationService.updateConversation(conversationId!, {
-        messages: JSON.stringify(updatedMessages)
+        Messages: JSON.stringify(updatedMessages)
       });
 
+      // 3. Send message to webhook
+      await messageService.sendMessage(
+        message,
+        conversation.guestEmail,
+        propertyId!
+      );
+
+      // Update local state
       setConversation(prev => ({
         ...prev,
         messages: updatedMessages
@@ -66,6 +80,9 @@ const ConversationDetail: React.FC = () => {
       setNewMessage('');
     } catch (err) {
       console.error('Failed to send message:', err);
+      setError('Failed to send message. Please try again.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -123,13 +140,15 @@ const ConversationDetail: React.FC = () => {
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
             placeholder="Type a message..."
             className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            disabled={sending}
           />
           <button
             onClick={handleSendMessage}
-            disabled={!newMessage.trim()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!newMessage.trim() || sending}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Send className="w-5 h-5" />
+            {sending ? 'Sending...' : 'Send'}
           </button>
         </div>
       </div>
