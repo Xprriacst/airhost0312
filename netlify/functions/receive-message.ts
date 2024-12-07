@@ -27,19 +27,25 @@ export const handler: Handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
 
+    console.log('➡️ Données reçues :', data);
+
     // Recherche de la propriété
     const properties = await propertyService.getProperties();
     const property = properties.find((p) => p.id === data.propertyId);
 
     if (!property) {
+      console.error('❌ Propriété introuvable pour ID :', data.propertyId);
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Property not found' }),
       };
     }
 
+    console.log('✅ Propriété trouvée :', property);
+
     // Récupérer les conversations pour cette propriété et cet e-mail
     const conversations = await conversationService.fetchConversations(data.propertyId, data.guestEmail);
+    console.log('Conversations récupérées :', conversations);
 
     // Vérifier s'il existe une conversation active avec cet email
     let conversation = conversations.find(
@@ -47,6 +53,8 @@ export const handler: Handler = async (event) => {
     );
 
     if (conversation) {
+      console.log('✅ Conversation existante trouvée :', conversation);
+
       // Ajouter le message à la conversation existante
       const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
       messages.push({
@@ -61,10 +69,12 @@ export const handler: Handler = async (event) => {
         Messages: JSON.stringify(messages),
       });
 
-      console.log('✓ Message ajouté à la conversation existante:', conversation.id);
+      console.log('✅ Message ajouté à la conversation existante :', conversation.id);
     } else {
-      // Vérifier que les dates sont fournies pour une nouvelle conversation
+      console.log('⚠️ Aucune conversation active trouvée. Création d\'une nouvelle conversation.');
+
       if (!data.checkInDate || !data.checkOutDate) {
+        console.error('❌ Dates manquantes pour créer une nouvelle conversation.');
         return {
           statusCode: 400,
           body: JSON.stringify({
@@ -73,7 +83,6 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      // Créer une nouvelle conversation
       conversation = await conversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
@@ -93,30 +102,7 @@ export const handler: Handler = async (event) => {
         ]),
       });
 
-      console.log('✓ Nouvelle conversation créée:', conversation.id);
-    }
-
-    // Générer une réponse AI si l'auto-pilot est activé
-    if (property.autoPilot) {
-      const aiResponse = await aiService.generateResponse(
-        {
-          id: Date.now().toString(),
-          text: data.message,
-          isUser: false,
-          timestamp: new Date(),
-          sender: data.guestName,
-        },
-        property
-      );
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          conversationId: conversation.id,
-          aiResponse,
-        }),
-      };
+      console.log('✅ Nouvelle conversation créée :', conversation.id);
     }
 
     return {
@@ -127,7 +113,7 @@ export const handler: Handler = async (event) => {
       }),
     };
   } catch (error) {
-    console.error('Error processing message:', error);
+    console.error('❌ Erreur lors du traitement du message :', error);
     return {
       statusCode: 400,
       body: JSON.stringify({
