@@ -21,6 +21,19 @@ export const propertyService = {
     }
   },
 
+  async getPropertyById(id: string): Promise<Property | null> {
+    try {
+      if (!base) {
+        throw new Error('Airtable is not configured');
+      }
+
+      const record = await base('Properties').find(id);
+      return mapRecordToProperty(record);
+    } catch (error) {
+      return handleServiceError(error, 'Property.getPropertyById');
+    }
+  },
+
   async updateProperty(id: string, propertyData: Partial<Property>): Promise<Property | null> {
     try {
       if (!base) {
@@ -42,7 +55,8 @@ export const propertyService = {
         'Parking Info': propertyData.parkingInfo,
         'Restaurants': propertyData.restaurants,
         'Fast Food': propertyData.fastFood,
-        'Emergency Contacts': propertyData.emergencyContacts
+        'Emergency Contacts': propertyData.emergencyContacts,
+        'Auto Pilot': propertyData.autoPilot
       });
 
       return mapRecordToProperty(updatedRecord);
@@ -51,29 +65,19 @@ export const propertyService = {
     }
   },
 
-  async addProperty(propertyData: Record<string, any>): Promise<Property | null> {
+  async toggleAutoPilot(id: string, autoPilot: boolean): Promise<Property | null> {
     try {
       if (!base) {
         throw new Error('Airtable is not configured');
       }
 
-      const createdRecord = await base('Properties').create(propertyData);
-      return mapRecordToProperty(createdRecord);
-    } catch (error) {
-      return handleServiceError(error, 'Property.addProperty');
-    }
-  },
+      const updatedRecord = await base('Properties').update(id, {
+        'Auto Pilot': autoPilot
+      });
 
-  async deleteProperty(id: string): Promise<{ success: boolean }> {
-    try {
-      if (!base) {
-        throw new Error('Airtable is not configured');
-      }
-
-      await base('Properties').destroy(id);
-      return { success: true };
+      return mapRecordToProperty(updatedRecord);
     } catch (error) {
-      return handleServiceError(error, 'Property.deleteProperty');
+      return handleServiceError(error, 'Property.toggleAutoPilot');
     }
   }
 };
