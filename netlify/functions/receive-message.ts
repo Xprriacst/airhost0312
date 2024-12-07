@@ -15,8 +15,6 @@ const messageSchema = z.object({
   checkOutDate: z.string().optional(),
 });
 
-console.log('Corps brut de la requête :', event.body);
-
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return {
@@ -26,17 +24,17 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Parse the incoming body
+    // Log the raw request body
+    console.log('Corps brut de la requête :', event.body);
+
     const body = JSON.parse(event.body || '{}');
-    console.log('➡️ Corps de la requête brute :', body);
-
-    // Validate the incoming data against the schema
     const data = messageSchema.parse(body);
-    console.log('➡️ Données validées après parsing :', data);
 
-    // Check if guestEmail is missing or undefined
+    // Log validated data
+    console.log('Données validées après parsing :', data);
+
     if (!data.guestEmail) {
-      console.error('❌ guestEmail est manquant ou indéfini :', data);
+      console.error('❌ guestEmail est manquant ou indéfini dans les données validées :', data);
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Guest email is required' }),
