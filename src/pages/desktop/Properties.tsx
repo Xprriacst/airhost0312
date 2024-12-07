@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Zap, MessageSquare, Users, Clock, Wifi } from 'lucide-react';
@@ -51,7 +50,7 @@ const Properties: React.FC = () => {
   };
 
   const handleViewConversations = (propertyId) => {
-    navigate(`/conversations/${propertyId}`);
+    navigate(`/properties/${propertyId}/conversations`);
   };
 
   if (loading) {
@@ -96,7 +95,7 @@ const Properties: React.FC = () => {
             <div key={property.id} className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="relative h-48">
                 <img
-                  src={property.photos?.[0] || 'https://via.placeholder.com/400x300'}
+                  src={property.photos?.[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6'}
                   alt={property.name}
                   className="w-full h-full object-cover"
                 />
@@ -118,10 +117,21 @@ const Properties: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
                 <p className="text-gray-600">{property.address}</p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Users className="w-4 h-4" />
+                    <span>Max {property.maxGuests} guests</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    <span>Check-in: {property.checkInTime}</span>
+                  </div>
+                </div>
                 <button
                   onClick={() => handleViewConversations(property.id)}
-                  className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="w-full mt-4 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
                 >
+                  <MessageSquare className="w-4 h-4" />
                   View Conversations
                 </button>
               </div>
@@ -132,7 +142,7 @@ const Properties: React.FC = () => {
 
       {showForm && (
         <div>
-          {/* Placeholder for PropertyForm Component */}
+          {/* PropertyForm Component would go here */}
           <p>Property Form goes here...</p>
         </div>
       )}
