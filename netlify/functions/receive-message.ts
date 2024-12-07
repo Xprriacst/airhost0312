@@ -24,10 +24,22 @@ export const handler: Handler = async (event) => {
   }
 
   try {
+    // Parse the incoming body
     const body = JSON.parse(event.body || '{}');
-    const data = messageSchema.parse(body);
+    console.log('➡️ Corps de la requête brute :', body);
 
-    console.log('➡️ Données reçues :', data);
+    // Validate the incoming data against the schema
+    const data = messageSchema.parse(body);
+    console.log('➡️ Données validées après parsing :', data);
+
+    // Check if guestEmail is missing or undefined
+    if (!data.guestEmail) {
+      console.error('❌ guestEmail est manquant ou indéfini :', data);
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Guest email is required' }),
+      };
+    }
 
     // Recherche de la propriété
     const properties = await propertyService.getProperties();
