@@ -3,6 +3,12 @@ import { env } from '../../config/env';
 
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
+// Utilitaire pour formater les dates au format ISO (YYYY-MM-DD)
+function formatDateToISO(date: string | Date): string {
+  const parsedDate = new Date(date);
+  return parsedDate.toISOString().split('T')[0]; // Retourne YYYY-MM-DD
+}
+
 const airtableConversationService = {
   async fetchConversations(propertyId: string, guestEmail: string) {
     console.log(`➡️ Recherche des conversations pour propertyId=${propertyId}, guestEmail=${guestEmail}`);
@@ -32,8 +38,8 @@ const airtableConversationService = {
         id: record.id,
         guestName: record.get('Guest Name') || 'Nom inconnu',
         guestEmail: record.get('Guest Email') || '',
-        checkIn: record.get('Check-in Date') || '',
-        checkOut: record.get('Check-out Date') || '',
+        checkIn: formatDateToISO(record.get('Check-in Date') || ''),
+        checkOut: formatDateToISO(record.get('Check-out Date') || ''),
         status: record.get('Status') || 'Inconnu',
         platform: record.get('Platform') || 'Non spécifié',
         messages: (() => {
@@ -54,6 +60,7 @@ const airtableConversationService = {
 
   async updateConversation(conversationId: string, data: Record<string, any>) {
     console.log('➡️ Mise à jour de la conversation ID:', conversationId);
+    console.log('Données envoyées pour mise à jour :', data);
     try {
       const updatedRecord = await base('Conversations').update(conversationId, data);
 
