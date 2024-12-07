@@ -1,3 +1,11 @@
-export { propertyService } from './airtable/propertyService';
-export { conversationService } from './airtable/conversationService';
-export { aiService } from './ai/aiService';
+import { propertyService } from './airtable/propertyService';
+import { conversationService } from './conversationService';
+import { messageService } from './messageService';
+import { aiService } from './ai/aiService';
+
+export {
+  propertyService,
+  conversationService,
+  messageService,
+  aiService
+};
