@@ -24,15 +24,15 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    // Parse the incoming body
-    const body = JSON.parse(event.body || '{}');
-    console.log('➡️ Corps de la requête brute :', body);
+    // Log the raw request body for debugging
+    console.log('➡️ Corps de la requête brute :', event.body);
 
-    // Validate the incoming data against the schema
+    // Parse and validate the incoming body
+    const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
     console.log('➡️ Données validées après parsing :', data);
 
-    // Check if guestEmail is missing or undefined
+    // Ensure guestEmail is present
     if (!data.guestEmail) {
       console.error('❌ guestEmail est manquant ou indéfini :', data);
       return {
@@ -41,7 +41,8 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Recherche de la propriété
+    // Fetch properties and find the relevant one
+    console.log('Fetching properties from Airtable...');
     const properties = await propertyService.getProperties();
     const property = properties.find((p) => p.id === data.propertyId);
 
@@ -52,23 +53,37 @@ export const handler: Handler = async (event) => {
         body: JSON.stringify({ error: 'Property not found' }),
       };
     }
-
     console.log('✅ Propriété trouvée :', property);
 
-    // Récupérer les conversations pour cette propriété et cet e-mail
-    const conversations = await conversationService.fetchConversations(data.propertyId, data.guestEmail);
+    // Fetch conversations associated with the property and guestEmail
+    console.log(
+      `➡️ Recherche des conversations pour propertyId=${data.propertyId}, guestEmail=${data.guestEmail}`
+    );
+    const conversations = await conversationService.fetchConversations(
+      data.propertyId,
+      data.guestEmail
+    );
     console.log('Conversations récupérées :', conversations);
 
-    // Vérifier s'il existe une conversation active avec cet email
-    let conversation = conversations.find(
-      (c) => new Date(c.checkOut) >= new Date()
-    );
+    // Check for an active conversation
+    let conversation = conversations.find((c) => {
+      const isActive =
+        c.status === 'Active' && new Date(c.checkOut).getTime() >= Date.now();
+      console.log('Comparaison des dates pour conversation:', {
+        checkOut: new Date(c.checkOut),
+        now: new Date(),
+        isActive,
+      });
+      return isActive;
+    });
 
     if (conversation) {
-      console.log('✅ Conversation existante trouvée :', conversation);
+      console.log('✅ Conversation active trouvée :', conversation);
 
-      // Ajouter le message à la conversation existante
-      const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+      // Add the message to the existing conversation
+      const messages = Array.isArray(conversation.messages)
+        ? conversation.messages
+        : [];
       messages.push({
         id: Date.now().toString(),
         text: data.message,
@@ -95,15 +110,16 @@ export const handler: Handler = async (event) => {
         };
       }
 
+      // Create a new conversation
       conversation = await conversationService.addConversation({
         Properties: [data.propertyId],
         'Guest Name': data.guestName,
         'Guest Email': data.guestEmail,
         'Check-in Date': data.checkInDate,
         'Check-out Date': data.checkOutDate,
-        'Status': 'Active',
-        'Platform': data.platform,
-        'Messages': JSON.stringify([
+        Status: 'Active',
+        Platform: data.platform,
+        Messages: JSON.stringify([
           {
             id: Date.now().toString(),
             text: data.message,
