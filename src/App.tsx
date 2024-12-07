@@ -3,33 +3,23 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import DesktopLayout from './components/DesktopLayout';
 import MobileLayout from './components/MobileLayout';
 import Conversations from './pages/Conversations';
-
-// On importe le nouveau composant
 import ConversationDetail from './pages/ConversationDetail';
 
 const App: React.FC = () => {
-  // Détection d'un écran mobile ou non
   const isMobile = window.innerWidth <= 768;
-  console.log('✅ App démarrée. Mode :', isMobile ? 'Mobile' : 'Desktop');
 
   return (
     <Router>
       {isMobile ? (
         <Routes>
-          {/* Route pour afficher les conversations d'une propriété en mode mobile */}
           <Route path="/properties/:propertyId/conversations" element={<Conversations />} />
-          {/* Route pour afficher le détail d'une conversation en mode mobile */}
-          <Route path="/chat/:conversationId" element={<ConversationDetail />} />
-          {/* Page d'accueil pour mobile */}
+          <Route path="/properties/:propertyId/conversations/:conversationId" element={<ConversationDetail />} />
           <Route path="/" element={<MobileLayout />} />
         </Routes>
       ) : (
         <Routes>
-          {/* Route pour afficher les conversations d'une propriété en mode desktop */}
           <Route path="/properties/:propertyId/conversations" element={<Conversations />} />
-          {/* Route pour afficher le détail d'une conversation en mode desktop */}
-          <Route path="/chat/:conversationId" element={<ConversationDetail />} />
-          {/* Page d'accueil pour desktop */}
+          <Route path="/properties/:propertyId/conversations/:conversationId" element={<ConversationDetail />} />
           <Route path="/" element={<DesktopLayout />} />
         </Routes>
       )}
