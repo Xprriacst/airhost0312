@@ -24,37 +24,34 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    console.log('➡️ Corps de la requête brute :', event.body);
+    console.log('➡️ Request body:', event.body);
 
     const body = JSON.parse(event.body || '{}');
     const data = messageSchema.parse(body);
-    console.log('➡️ Données validées après parsing :', data);
+    console.log('➡️ Validated data:', data);
 
     // Recherche de la propriété
     const properties = await propertyService.getProperties();
     const property = properties.find((p) => p.id === data.propertyId);
 
     if (!property) {
-      console.error('❌ Propriété introuvable pour ID :', data.propertyId);
+      console.error('❌ Property not found for ID:', data.propertyId);
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Property not found' }),
       };
     }
-    console.log('✅ Propriété trouvée :', property);
+    console.log('✅ Property found:', property);
 
-    // Récupération des conversations pour cet email et cette propriété
-    const conversations = await conversationService.fetchConversations(
-      data.propertyId,
-      data.guestEmail
-    );
-    console.log('Conversations récupérées :', conversations);
+    // Récupération des conversations pour cette propriété
+    const conversations = await conversationService.fetchPropertyConversations(data.propertyId);
+    console.log('Conversations retrieved:', conversations);
 
     // Vérification si une conversation existe pour cet email
     let conversation = conversations.find((c) => c.guestEmail === data.guestEmail);
 
     if (conversation) {
-      console.log('✅ Conversation existante trouvée :', conversation);
+      console.log('✅ Existing conversation found:', conversation);
 
       // Ajouter le message à la conversation existante
       const messages = Array.isArray(conversation.messages)
@@ -73,9 +70,9 @@ export const handler: Handler = async (event) => {
         Messages: JSON.stringify(messages),
       });
 
-      console.log('✅ Message ajouté à la conversation existante :', conversation.id);
+      console.log('✅ Message added to existing conversation:', conversation.id);
     } else {
-      console.log('⚠️ Aucune conversation correspondante trouvée. Création d\'une nouvelle conversation.');
+      console.log('⚠️ No matching conversation found. Creating new conversation.');
 
       // Création d'une nouvelle conversation
       conversation = await conversationService.addConversation({
@@ -84,6 +81,8 @@ export const handler: Handler = async (event) => {
         'Guest Email': data.guestEmail,
         Status: 'Active',
         Platform: data.platform,
+        'Check-in Date': data.checkInDate,
+        'Check-out Date': data.checkOutDate,
         Messages: JSON.stringify([
           {
             id: Date.now().toString(),
@@ -95,7 +94,7 @@ export const handler: Handler = async (event) => {
         ]),
       });
 
-      console.log('✅ Nouvelle conversation créée :', conversation.id);
+      console.log('✅ New conversation created:', conversation.id);
     }
 
     return {
@@ -106,7 +105,7 @@ export const handler: Handler = async (event) => {
       }),
     };
   } catch (error) {
-    console.error('❌ Erreur lors du traitement du message :', error);
+    console.error('❌ Error processing message:', error);
     return {
       statusCode: 400,
       body: JSON.stringify({
