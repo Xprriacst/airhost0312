@@ -1,18 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import ConversationList from '../components/ConversationList';
-import useConversations from '../hooks/useConversations';
+import { conversationService } from '../services';
+import type { Conversation } from '../types';
 
 const Conversations: React.FC = () => {
   const navigate = useNavigate();
   const { propertyId } = useParams();
-  const guestEmail = "pirouete@example.com"; // TODO: Get from auth context or props
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { conversations, isLoading, error } = useConversations(propertyId!, guestEmail);
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        setIsLoading(true);
+        let fetchedConversations;
+        
+        if (propertyId) {
+          // Fetch conversations for specific property
+          fetchedConversations = await conversationService.fetchPropertyConversations(propertyId);
+        } else {
+          // Fetch all conversations
+          fetchedConversations = await conversationService.fetchAllConversations();
+        }
+        
+        setConversations(fetchedConversations);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load conversations');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleSelectConversation = (conversation: any) => {
-    navigate(`/properties/${propertyId}/conversations/${conversation.id}`);
+    fetchConversations();
+  }, [propertyId]);
+
+  const handleSelectConversation = (conversation: Conversation) => {
+    navigate(`/properties/${conversation.propertyId}/conversations/${conversation.id}`);
   };
 
   return (
@@ -24,7 +51,9 @@ const Conversations: React.FC = () => {
         >
           <ArrowLeft className="w-5 h-5 text-gray-600" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Conversations</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {propertyId ? 'Property Conversations' : 'All Conversations'}
+        </h1>
       </div>
 
       <ConversationList

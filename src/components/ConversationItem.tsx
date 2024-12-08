@@ -26,6 +26,13 @@ const EmergencyIcon = ({ tag }: { tag: EmergencyTag }) => {
 
 const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onClick }) => {
   const lastMessage = conversation.messages[conversation.messages.length - 1];
+  const formattedDate = (date: string) => {
+    try {
+      return new Date(date).toLocaleDateString();
+    } catch {
+      return date;
+    }
+  };
 
   return (
     <button
@@ -45,7 +52,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onCli
               ))}
             </div>
             <p className="text-sm text-gray-500">
-              {new Date(conversation.checkIn).toLocaleDateString()} - {new Date(conversation.checkOut).toLocaleDateString()}
+              {formattedDate(conversation.checkIn)} - {formattedDate(conversation.checkOut)}
             </p>
           </div>
         </div>
@@ -53,10 +60,11 @@ const ConversationItem: React.FC<ConversationItemProps> = ({ conversation, onCli
           {conversation.messages.length} messages
         </span>
       </div>
+
       {lastMessage && (
         <div className="mt-3">
           <p className="text-sm text-gray-600 line-clamp-1">
-            Dernier message : {lastMessage.text}
+            Last message: {lastMessage.text}
           </p>
           <p className="text-xs text-gray-400 mt-1">
             {new Date(lastMessage.timestamp).toLocaleString()}
