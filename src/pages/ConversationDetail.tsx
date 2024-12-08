@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Zap } from 'lucide-react';
 import { conversationService, messageService, propertyService } from '../services';
 import ChatMessage from '../components/ChatMessage';
-import type { Message, Property } from '../types';
+import type { Message, Property, Conversation } from '../types';
 
 const ConversationDetail: React.FC = () => {
   const { propertyId, conversationId } = useParams();
   const navigate = useNavigate();
-  const [conversation, setConversation] = useState<any>(null);
+  const [conversation, setConversation] = useState<Conversation | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -43,21 +43,8 @@ const ConversationDetail: React.FC = () => {
     loadData();
   }, [conversationId, propertyId]);
 
-  const handleToggleAutoPilot = async () => {
-    if (!propertyId) return;
-
-    try {
-      const updatedProperty = await propertyService.toggleAutoPilot(propertyId, !isAutoPilot);
-      if (updatedProperty) {
-        setIsAutoPilot(updatedProperty.autoPilot || false);
-      }
-    } catch (err) {
-      console.error('Failed to toggle auto-pilot:', err);
-    }
-  };
-
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !conversation) return;
 
     const message: Message = {
       id: Date.now().toString(),
@@ -76,16 +63,11 @@ const ConversationDetail: React.FC = () => {
         Messages: JSON.stringify(updatedMessages)
       });
 
-      await messageService.sendMessage(
-        message,
-        conversation.guestEmail,
-        propertyId!
-      );
-
-      setConversation(prev => ({
+      setConversation(prev => prev ? {
         ...prev,
         messages: updatedMessages
-      }));
+      } : null);
+      
       setNewMessage('');
     } catch (err) {
       console.error('Failed to send message:', err);
@@ -113,6 +95,16 @@ const ConversationDetail: React.FC = () => {
     );
   }
 
+  if (!conversation) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 text-yellow-600 p-4 rounded-lg">
+          Conversation not found
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <div className="bg-white border-b px-4 py-3">
@@ -126,31 +118,18 @@ const ConversationDetail: React.FC = () => {
             </button>
             <div>
               <h1 className="text-lg font-semibold text-gray-900">
-                {conversation?.guestName || 'Guest'}
+                {conversation.guestName}
               </h1>
               <p className="text-sm text-gray-500">
-                {conversation?.checkIn && new Date(conversation.checkIn).toLocaleDateString()} - {conversation?.checkOut && new Date(conversation.checkOut).toLocaleDateString()}
+                {new Date(conversation.checkIn).toLocaleDateString()} - {new Date(conversation.checkOut).toLocaleDateString()}
               </p>
             </div>
           </div>
-          <button
-            onClick={handleToggleAutoPilot}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-colors ${
-              isAutoPilot
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-gray-100 text-gray-600'
-            }`}
-          >
-            <Zap className={`w-4 h-4 ${isAutoPilot ? 'text-blue-500' : 'text-gray-400'}`} />
-            <span className="text-sm font-medium">
-              {isAutoPilot ? 'Auto-pilot ON' : 'Auto-pilot OFF'}
-            </span>
-          </button>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {conversation?.messages?.map((message: Message) => (
+        {conversation.messages.map((message) => (
           <ChatMessage key={message.id} message={message} />
         ))}
       </div>
