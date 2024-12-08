@@ -1,14 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Zap } from 'lucide-react';
 import { conversationService, messageService, propertyService } from '../services';
 import ChatMessage from '../components/ChatMessage';
 import type { Message, Property, Conversation } from '../types';
 
+const POLLING_INTERVAL = 3000; // Check for new messages every 3 seconds
+
 const ConversationDetail: React.FC = () => {
   const { propertyId, conversationId } = useParams();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollingRef = useRef<NodeJS.Timeout>();
+  
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -17,32 +21,45 @@ const ConversationDetail: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [isAutoPilot, setIsAutoPilot] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!conversationId || !propertyId) {
-        setError('Missing required parameters');
-        setLoading(false);
-        return;
-      }
+  const fetchConversation = useCallback(async () => {
+    if (!conversationId || !propertyId) return;
 
-      try {
-        const [convData, propData] = await Promise.all([
-          conversationService.fetchConversationById(conversationId),
-          propertyService.getPropertyById(propertyId)
-        ]);
+    try {
+      const [convData, propData] = await Promise.all([
+        conversationService.fetchConversationById(conversationId),
+        propertyService.getPropertyById(propertyId)
+      ]);
 
+      // Only update if messages have changed
+      if (JSON.stringify(convData.messages) !== JSON.stringify(conversation?.messages)) {
         setConversation(convData);
+      }
+      
+      if (!property) {
         setProperty(propData);
         setIsAutoPilot(propData?.autoPilot || false);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error fetching conversation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  }, [conversationId, propertyId, conversation?.messages, property]);
+
+  useEffect(() => {
+    fetchConversation();
+
+    // Start polling
+    pollingRef.current = setInterval(fetchConversation, POLLING_INTERVAL);
+
+    return () => {
+      // Cleanup polling on unmount
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
       }
     };
-
-    loadData();
-  }, [conversationId, propertyId]);
+  }, [fetchConversation]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
