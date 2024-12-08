@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send, Zap } from 'lucide-react';
 import { conversationService, messageService, propertyService } from '../services';
@@ -8,6 +8,7 @@ import type { Message, Property, Conversation } from '../types';
 const ConversationDetail: React.FC = () => {
   const { propertyId, conversationId } = useParams();
   const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -42,6 +43,11 @@ const ConversationDetail: React.FC = () => {
 
     loadData();
   }, [conversationId, propertyId]);
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation?.messages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sending || !conversation) return;
@@ -128,10 +134,16 @@ const ConversationDetail: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {conversation.messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="space-y-4">
+          {conversation.messages.map((message) => (
+            <ChatMessage 
+              key={`${message.id}-${message.timestamp.toString()}`} 
+              message={message} 
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </div>
 
       <div className="bg-white border-t p-4">
