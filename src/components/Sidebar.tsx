@@ -6,13 +6,13 @@ const Sidebar = () => {
   const navItems = [
     { icon: Home, label: 'Propriétés', path: '/' },
     { icon: MessageSquare, label: 'Conversations', path: '/conversations' },
-    { icon: AlertTriangle, label: 'Cas d\'urgence', path: '/emergency' },
+    { icon: AlertTriangle, label: "Cas d'urgence", path: '/emergency' },
     { icon: TestTube, label: 'Chat Sandbox', path: '/sandbox' },
     { icon: Settings, label: 'Paramètres', path: '/settings' },
   ];
 
   return (
-    <aside className="bg-gray-900 text-white w-64 min-h-screen p-4">
+    <div className="h-full bg-gray-900 text-white p-4">
       <div className="flex items-center gap-2 mb-8 px-2">
         <Home className="w-8 h-8 text-blue-400" />
         <h1 className="text-xl font-bold">AirHost Admin</h1>
@@ -36,7 +36,7 @@ const Sidebar = () => {
           </NavLink>
         ))}
       </nav>
-    </aside>
+    </div>
   );
 };
 
