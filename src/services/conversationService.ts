@@ -1,11 +1,12 @@
 import airtableConversationService from './airtable/conversationService';
+import type { Conversation } from '../types';
 
 export const conversationService = {
   async fetchConversations(propertyId: string, guestEmail: string) {
     return airtableConversationService.fetchConversations(propertyId, guestEmail);
   },
 
-  async fetchConversationById(conversationId: string) {
+  async fetchConversationById(conversationId: string): Promise<Conversation> {
     return airtableConversationService.fetchConversationById(conversationId);
   },
 
