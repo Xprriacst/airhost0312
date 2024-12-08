@@ -1,5 +1,7 @@
 import Airtable from 'airtable';
 import { env } from '../../config/env';
+import { mapRecordToConversation } from './mappers';
+import type { Conversation } from '../../types';
 
 const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
 
@@ -16,6 +18,8 @@ const airtableConversationService = {
             'Messages',
             'Status',
             'Platform',
+            'Check-in Date',
+            'Check-out Date'
           ],
         })
         .all();
@@ -29,8 +33,11 @@ const airtableConversationService = {
 
       return records.map((record) => ({
         id: record.id,
+        propertyId,
         guestName: record.get('Guest Name') || 'Unknown',
         guestEmail: record.get('Guest Email') || '',
+        checkIn: record.get('Check-in Date') as string,
+        checkOut: record.get('Check-out Date') as string,
         status: record.get('Status') || 'Unknown',
         platform: record.get('Platform') || 'Not specified',
         messages: (() => {
@@ -46,6 +53,43 @@ const airtableConversationService = {
     } catch (error) {
       console.error('❌ Error fetching conversations:', error);
       throw new Error('Failed to fetch conversations.');
+    }
+  },
+
+  async fetchConversationById(conversationId: string): Promise<Conversation> {
+    console.log(`➡️ Fetching conversation by ID: ${conversationId}`);
+    try {
+      const record = await base('Conversations').find(conversationId);
+      
+      if (!record) {
+        throw new Error(`Conversation not found: ${conversationId}`);
+      }
+
+      const propertyIds = record.get('Properties') as string[];
+      const propertyId = Array.isArray(propertyIds) ? propertyIds[0] : propertyIds;
+
+      return {
+        id: record.id,
+        propertyId,
+        guestName: record.get('Guest Name') as string,
+        guestEmail: record.get('Guest Email') as string,
+        checkIn: record.get('Check-in Date') as string,
+        checkOut: record.get('Check-out Date') as string,
+        messages: (() => {
+          const rawMessages = record.get('Messages');
+          try {
+            return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
+          } catch (error) {
+            console.warn(`⚠️ Invalid message format for conversation ${conversationId}:`, error);
+            return [];
+          }
+        })(),
+        status: record.get('Status') as string,
+        platform: record.get('Platform') as string
+      };
+    } catch (error) {
+      console.error(`❌ Error fetching conversation ${conversationId}:`, error);
+      throw new Error('Failed to fetch conversation');
     }
   },
 
@@ -78,6 +122,18 @@ const airtableConversationService = {
       throw new Error('Failed to create conversation.');
     }
   },
+
+  async deleteConversation(conversationId: string) {
+    console.log('➡️ Deleting conversation:', conversationId);
+    try {
+      await base('Conversations').destroy(conversationId);
+      console.log('✅ Conversation deleted successfully');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error deleting conversation:', error);
+      throw new Error('Failed to delete conversation.');
+    }
+  }
 };
 
 export default airtableConversationService;
