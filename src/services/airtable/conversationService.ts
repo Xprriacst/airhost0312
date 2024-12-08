@@ -1,18 +1,16 @@
-import Airtable from 'airtable';
-import { env } from '../../config/env';
-import { mapRecordToConversation } from './mappers';
+import { base } from './config';
+import { handleServiceError } from '../../utils/error';
 import type { Conversation } from '../../types';
 
-const base = new Airtable({ apiKey: env.airtable.apiKey }).base(env.airtable.baseId);
-
 const airtableConversationService = {
-  async fetchConversations(propertyId: string, guestEmail: string) {
-    console.log(`➡️ Fetching conversations for propertyId=${propertyId}, guestEmail=${guestEmail}`);
+  async fetchAllConversations(): Promise<Conversation[]> {
+    console.log('➡️ Fetching all conversations');
     try {
       const records = await base('Conversations')
         .select({
-          filterByFormula: `AND({Properties} = '${propertyId}', {Guest Email} = '${guestEmail}')`,
+          view: 'Grid view',
           fields: [
+            'Properties',
             'Guest Name',
             'Guest Email',
             'Messages',
@@ -24,35 +22,74 @@ const airtableConversationService = {
         })
         .all();
 
-      if (records.length === 0) {
-        console.log(`⚠️ No conversations found for propertyId=${propertyId} and guestEmail=${guestEmail}`);
-        return [];
-      }
-
-      console.log('✅ Conversations found:', records.map((r) => r.fields));
-
-      return records.map((record) => ({
+      return records.map(record => ({
         id: record.id,
-        propertyId,
-        guestName: record.get('Guest Name') || 'Unknown',
-        guestEmail: record.get('Guest Email') || '',
+        propertyId: Array.isArray(record.get('Properties')) 
+          ? record.get('Properties')[0] 
+          : record.get('Properties'),
+        guestName: record.get('Guest Name') as string,
+        guestEmail: record.get('Guest Email') as string,
         checkIn: record.get('Check-in Date') as string,
         checkOut: record.get('Check-out Date') as string,
-        status: record.get('Status') || 'Unknown',
-        platform: record.get('Platform') || 'Not specified',
         messages: (() => {
           const rawMessages = record.get('Messages');
           try {
             return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
           } catch (error) {
-            console.warn(`⚠️ Invalid message format for record ID ${record.id}:`, error);
+            console.warn(`⚠️ Invalid message format for record ${record.id}:`, error);
             return [];
           }
         })(),
+        status: record.get('Status') as string,
+        platform: record.get('Platform') as string
       }));
     } catch (error) {
-      console.error('❌ Error fetching conversations:', error);
-      throw new Error('Failed to fetch conversations.');
+      console.error('❌ Error fetching all conversations:', error);
+      throw new Error('Failed to fetch conversations');
+    }
+  },
+
+  async fetchPropertyConversations(propertyId: string): Promise<Conversation[]> {
+    console.log(`➡️ Fetching conversations for property: ${propertyId}`);
+    try {
+      const records = await base('Conversations')
+        .select({
+          filterByFormula: `SEARCH("${propertyId}", {Properties})`,
+          fields: [
+            'Properties',
+            'Guest Name',
+            'Guest Email',
+            'Messages',
+            'Status',
+            'Platform',
+            'Check-in Date',
+            'Check-out Date'
+          ],
+        })
+        .all();
+
+      return records.map(record => ({
+        id: record.id,
+        propertyId,
+        guestName: record.get('Guest Name') as string,
+        guestEmail: record.get('Guest Email') as string,
+        checkIn: record.get('Check-in Date') as string,
+        checkOut: record.get('Check-out Date') as string,
+        messages: (() => {
+          const rawMessages = record.get('Messages');
+          try {
+            return typeof rawMessages === 'string' ? JSON.parse(rawMessages) : rawMessages || [];
+          } catch (error) {
+            console.warn(`⚠️ Invalid message format for record ${record.id}:`, error);
+            return [];
+          }
+        })(),
+        status: record.get('Status') as string,
+        platform: record.get('Platform') as string
+      }));
+    } catch (error) {
+      console.error(`❌ Error fetching conversations for property ${propertyId}:`, error);
+      throw new Error('Failed to fetch property conversations');
     }
   },
 
