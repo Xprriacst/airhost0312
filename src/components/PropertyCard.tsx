@@ -21,14 +21,20 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onDelete }) => {
         />
         <div className="absolute top-4 right-4 space-x-2">
           <button
-            onClick={() => navigate(`/properties/${property.id}/config`)}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/properties/${property.id}/config`);
+            }}
             className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
           >
             <span className="sr-only">Configure</span>
             <Settings className="w-5 h-5 text-gray-600" />
           </button>
           <button
-            onClick={() => onDelete(property.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(property.id);
+            }}
             className="bg-white p-2 rounded-full shadow-lg hover:bg-red-50 transition-colors"
           >
             <span className="sr-only">Delete</span>
