@@ -8,6 +8,7 @@ import MobileChat from '../pages/MobileChat';
 import ChatSandbox from '../pages/ChatSandbox';
 import EmergencyCases from '../pages/EmergencyCases';
 import ConversationDetail from '../pages/ConversationDetail';
+import PropertyConfig from '../pages/PropertyConfig';
 
 const DesktopLayout: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const DesktopLayout: React.FC = () => {
           <Route path="/conversations" element={<Conversations />} />
           <Route path="/properties/:propertyId/conversations" element={<Conversations />} />
           <Route path="/properties/:propertyId/conversations/:conversationId" element={<ConversationDetail />} />
+          <Route path="/properties/:propertyId/config" element={<PropertyConfig />} />
           <Route path="/emergency" element={<EmergencyCases />} />
           <Route path="/sandbox" element={<ChatSandbox />} />
           <Route path="/settings" element={<Settings />} />
