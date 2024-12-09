@@ -12,7 +12,7 @@ export const faqService = {
       const records = await base('FAQ')
         .select({
           filterByFormula: `{Property} = '${propertyId}'`,
-          sort: [{ field: 'Use Count', direction: 'desc' }]
+          sort: [{ field: 'UseCount', direction: 'desc' }]
         })
         .all();
 
@@ -23,7 +23,7 @@ export const faqService = {
         answer: record.get('Answer') as string,
         category: record.get('Category') as FAQItem['category'],
         isActive: record.get('Active') as boolean,
-        useCount: record.get('Use Count') as number || 0
+        useCount: record.get('UseCount') as number || 0
       }));
     } catch (error) {
       return handleServiceError(error, 'FAQ.getFAQsForProperty');
@@ -42,7 +42,7 @@ export const faqService = {
         Answer: faq.answer,
         Category: faq.category,
         Active: faq.isActive,
-        'Use Count': faq.useCount || 0
+        UseCount: faq.useCount || 0
       });
 
       return {
@@ -52,7 +52,7 @@ export const faqService = {
         answer: record.get('Answer') as string,
         category: record.get('Category') as FAQItem['category'],
         isActive: record.get('Active') as boolean,
-        useCount: record.get('Use Count') as number || 0
+        useCount: record.get('UseCount') as number || 0
       };
     } catch (error) {
       return handleServiceError(error, 'FAQ.createFAQ');
@@ -70,7 +70,7 @@ export const faqService = {
         Answer: data.answer,
         Category: data.category,
         Active: data.isActive,
-        'Use Count': data.useCount
+        UseCount: data.useCount
       });
 
       return {
@@ -80,7 +80,7 @@ export const faqService = {
         answer: record.get('Answer') as string,
         category: record.get('Category') as FAQItem['category'],
         isActive: record.get('Active') as boolean,
-        useCount: record.get('Use Count') as number || 0
+        useCount: record.get('UseCount') as number || 0
       };
     } catch (error) {
       return handleServiceError(error, 'FAQ.updateFAQ');
@@ -94,10 +94,10 @@ export const faqService = {
       }
 
       const record = await base('FAQ').find(id);
-      const currentCount = record.get('Use Count') as number || 0;
+      const currentCount = record.get('UseCount') as number || 0;
 
       await base('FAQ').update(id, {
-        'Use Count': currentCount + 1
+        UseCount: currentCount + 1
       });
     } catch (error) {
       return handleServiceError(error, 'FAQ.incrementUseCount');
