@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import DesktopLayout from './components/DesktopLayout';
 import MobileLayout from './components/MobileLayout';
 import ConversationDetail from './pages/ConversationDetail';
+import PropertyConfig from './pages/PropertyConfig';
 
 const App: React.FC = () => {
   const isMobile = window.innerWidth <= 768;
@@ -15,6 +16,7 @@ const App: React.FC = () => {
         <Routes>
           <Route path="/*" element={<DesktopLayout />}>
             <Route path="properties/:propertyId/conversations/:conversationId" element={<ConversationDetail />} />
+            <Route path="properties/:propertyId/config" element={<PropertyConfig />} />
           </Route>
         </Routes>
       )}
