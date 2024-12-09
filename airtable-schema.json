@@ -44,35 +44,7 @@
         { "name": "Answer", "type": "longText", "required": true },
         { "name": "Category", "type": "singleSelect", "options": ["check-in", "check-out", "wifi", "parking", "house-rules", "general"], "required": true },
         { "name": "Active", "type": "checkbox", "defaultValue": true },
-        { "name": "Use Count", "type": "number", "defaultValue": 0 }
-      ]
-    },
-    "Bookings": {
-      "name": "Bookings",
-      "description": "Réservations des voyageurs",
-      "fields": [
-        { "name": "Property", "type": "foreignKey", "references": "Properties" },
-        { "name": "Guest Name", "type": "singleLineText", "required": true },
-        { "name": "Guest Email", "type": "email", "required": true },
-        { "name": "Guest Phone", "type": "phoneNumber" },
-        { "name": "Check-in Date", "type": "date", "required": true },
-        { "name": "Check-out Date", "type": "date", "required": true },
-        { "name": "Number of Guests", "type": "number", "required": true },
-        { "name": "Status", "type": "singleSelect", "options": ["Confirmed", "Pending", "Cancelled"] },
-        { "name": "Platform", "type": "singleSelect", "options": ["Airbnb", "Booking.com", "Direct"] },
-        { "name": "Booking Reference", "type": "singleLineText" }
-      ]
-    },
-    "Messages": {
-      "name": "Messages",
-      "description": "Historique des conversations",
-      "fields": [
-        { "name": "Booking", "type": "foreignKey", "references": "Bookings" },
-        { "name": "Timestamp", "type": "dateTime", "required": true },
-        { "name": "Sender", "type": "singleSelect", "options": ["Guest", "Host", "AI"] },
-        { "name": "Message", "type": "longText", "required": true },
-        { "name": "AI Generated", "type": "checkbox" },
-        { "name": "Template Used", "type": "foreignKey", "references": "Response Templates" }
+        { "name": "UseCount", "type": "number", "defaultValue": 0 }
       ]
     }
   }
