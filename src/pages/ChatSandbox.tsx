@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Send, RefreshCw, Calendar, Clock, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Send, RefreshCw, Calendar, Clock, User, Loader } from 'lucide-react';
 import type { Message, Property } from '../types';
-import { aiService } from '../services/aiService';
+import { aiService, propertyService } from '../services';
 import ChatMessage from '../components/ChatMessage';
 
 const ChatSandbox: React.FC = () => {
+  const [properties, setProperties] = useState<Property[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -16,53 +17,27 @@ const ChatSandbox: React.FC = () => {
   const [checkOut, setCheckOut] = useState<string>(
     new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [properties] = useState<Property[]>([
-    {
-      id: '1',
-      name: 'Sunset Villa',
-      address: '123 Ocean Drive, Miami Beach, FL',
-      accessCodes: {
-        wifi: 'sunset2024',
-        door: '4080#',
-      },
-      houseRules: ['No smoking', 'No parties', 'Quiet hours 10 PM - 8 AM'],
-      amenities: ['Pool', 'Beach access', 'Free parking'],
-      checkInTime: '15:00',
-      checkOutTime: '11:00',
-      maxGuests: 6,
-      photos: ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6'],
-    },
-    {
-      id: '2',
-      name: 'Studio Blois',
-      address: '13 rue des Papegaults, Blois',
-      accessCodes: {
-        wifi: {
-          name: 'FREEBOX-AE4AC6',
-          password: 'barbani@%-solvi38-irrogatura-cannetum?&'
-        },
-        door: '210',
-      },
-      houseRules: ['Max 4 people', 'No extra visitors', 'Respect noise levels'],
-      amenities: ['TV', 'Kitchen', 'Heating'],
-      checkInTime: '15:00',
-      checkOutTime: '11:00',
-      maxGuests: 4,
-      photos: ['https://images.unsplash.com/photo-1522708323590-d24dbb6b0267'],
-      description: 'Bienvenue dans notre charmant studio...',
-      parkingInfo: 'Parking gratuit : Parking du Mail...',
-      restaurants: ['Brute Maison de Cuisine', 'Le Diffa', "Bro's Restaurant"],
-      fastFood: ["Frenchy's", 'Le Berliner', 'Osaka'],
-      emergencyContacts: ['+33 6 17 37 04 84', '+33 6 20 16 93 17'],
-      additionalInfo: {
-        windows: 'Pour éviter les pigeons, ne les ouvrez pas complètement.',
-        tv: 'Vérifiez que la source est sur "HDMI 1"',
-        heating: 'Géré à distance.',
-        bikes: 'Aucun local dédié dans l\'immeuble.'
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const data = await propertyService.getProperties();
+        setProperties(data);
+        if (data.length > 0) {
+          setSelectedProperty(data[0]);
+        }
+      } catch (err) {
+        setError('Failed to load properties');
+        console.error('Error fetching properties:', err);
+      } finally {
+        setLoading(false);
       }
-    }
-  ]);
+    };
+
+    fetchProperties();
+  }, []);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedProperty) return;
@@ -92,7 +67,7 @@ const ChatSandbox: React.FC = () => {
         id: (Date.now() + 1).toString(),
         text: response,
         isUser: true,
-        timestamp: new Date(messageTimestamp.getTime() + 1000), // 1 second later
+        timestamp: new Date(messageTimestamp.getTime() + 1000),
         sender: 'AI Assistant'
       };
       setMessages(prev => [...prev, aiMessage]);
@@ -106,6 +81,24 @@ const ChatSandbox: React.FC = () => {
   const clearChat = () => {
     setMessages([]);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
+          {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
