@@ -30,6 +30,34 @@ export const whatsappService = {
     }
   },
 
+  async sendTemplate(to: string, templateName: string, language: string = 'en'): Promise<void> {
+    try {
+      await axios.post(
+        `${WHATSAPP_API_URL}/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+        {
+          messaging_product: 'whatsapp',
+          to,
+          type: 'template',
+          template: {
+            name: templateName,
+            language: {
+              code: language
+            }
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Failed to send WhatsApp template:', error);
+      throw new Error('Failed to send WhatsApp template');
+    }
+  },
+
   validateWebhook(mode: string, token: string, challenge: string): string | null {
     const VERIFY_TOKEN = process.env.VITE_WHATSAPP_VERIFY_TOKEN;
     
