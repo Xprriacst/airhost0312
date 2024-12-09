@@ -1,31 +1,31 @@
 import React from 'react';
-import { Home, Users, Clock, Wifi } from 'lucide-react';
+import { Home, Users, Clock, Wifi, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Property } from '../types';
 
 interface PropertyCardProps {
   property: Property;
-  onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property, onEdit, onDelete }) => {
+const PropertyCard: React.FC<PropertyCardProps> = ({ property, onDelete }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
       <div className="relative h-48">
         <img
-          src={property.photos[0] || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994'}
+          src={property.photos[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6'}
           alt={property.name}
           className="w-full h-full object-cover"
         />
         <div className="absolute top-4 right-4 space-x-2">
           <button
-            onClick={() => onEdit(property.id)}
+            onClick={() => navigate(`/properties/${property.id}/config`)}
             className="bg-white p-2 rounded-full shadow-lg hover:bg-gray-100 transition-colors"
           >
-            <span className="sr-only">Edit</span>
-            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
+            <span className="sr-only">Configure</span>
+            <Settings className="w-5 h-5 text-gray-600" />
           </button>
           <button
             onClick={() => onDelete(property.id)}
