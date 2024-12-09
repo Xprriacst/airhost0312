@@ -2,6 +2,8 @@ import { base } from './config';
 import { mockProperties } from './mockData';
 import { mapRecordToProperty } from './mappers';
 import { handleServiceError } from '../../utils/error';
+import { aiInstructionService } from './aiInstructionService';
+import { faqService } from './faqService';
 import type { Property } from '../../types';
 
 export const propertyService = {
@@ -15,7 +17,23 @@ export const propertyService = {
       const records = await base('Properties')
         .select({ view: 'Grid view' })
         .all();
-      return records.map(mapRecordToProperty);
+
+      const properties = await Promise.all(
+        records.map(async (record) => {
+          const property = mapRecordToProperty(record);
+          const [aiInstructions, faq] = await Promise.all([
+            aiInstructionService.getInstructionsForProperty(property.id),
+            faqService.getFAQsForProperty(property.id)
+          ]);
+          return {
+            ...property,
+            aiInstructions,
+            faq
+          };
+        })
+      );
+
+      return properties;
     } catch (error) {
       return handleServiceError(error, 'Property.getProperties');
     }
@@ -28,7 +46,18 @@ export const propertyService = {
       }
 
       const record = await base('Properties').find(id);
-      return mapRecordToProperty(record);
+      const property = mapRecordToProperty(record);
+
+      const [aiInstructions, faq] = await Promise.all([
+        aiInstructionService.getInstructionsForProperty(id),
+        faqService.getFAQsForProperty(id)
+      ]);
+
+      return {
+        ...property,
+        aiInstructions,
+        faq
+      };
     } catch (error) {
       return handleServiceError(error, 'Property.getPropertyById');
     }
@@ -40,6 +69,7 @@ export const propertyService = {
         throw new Error('Airtable is not configured');
       }
 
+      // Update main property record
       const updatedRecord = await base('Properties').update(id, {
         Name: propertyData.name,
         Address: propertyData.address,
@@ -59,7 +89,29 @@ export const propertyService = {
         'Auto Pilot': propertyData.autoPilot
       });
 
-      return mapRecordToProperty(updatedRecord);
+      // Update AI Instructions
+      if (propertyData.aiInstructions) {
+        await Promise.all(
+          propertyData.aiInstructions.map((instruction) =>
+            instruction.id
+              ? aiInstructionService.updateInstruction(instruction.id, instruction)
+              : aiInstructionService.createInstruction(instruction)
+          )
+        );
+      }
+
+      // Update FAQs
+      if (propertyData.faq) {
+        await Promise.all(
+          propertyData.faq.map((faq) =>
+            faq.id
+              ? faqService.updateFAQ(faq.id, faq)
+              : faqService.createFAQ(faq)
+          )
+        );
+      }
+
+      return this.getPropertyById(id);
     } catch (error) {
       return handleServiceError(error, 'Property.updateProperty');
     }
