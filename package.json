@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "populate-db": "tsx src/scripts/populateAirtable.ts",
-    "test:whatsapp": "tsx src/utils/test-whatsapp.ts"
+    "test:whatsapp": "tsx src/utils/test-whatsapp.ts",
+    "test:webhook": "tsx src/utils/test-whatsapp-webhook.ts"
   },
   "dependencies": {
     "@netlify/functions": "^2.6.0",
