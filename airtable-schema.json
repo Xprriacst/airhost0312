@@ -4,15 +4,15 @@
       "name": "Properties",
       "description": "Informations sur les logements",
       "fields": [
-        { "name": "Name", "type": "singleLineText", "required": true },
-        { "name": "Address", "type": "singleLineText", "required": true },
+        { "name": "Name", "type": "singleLineText" },
+        { "name": "Address", "type": "singleLineText" },
         { "name": "Description", "type": "longText" },
         { "name": "WiFi Name", "type": "singleLineText" },
         { "name": "WiFi Password", "type": "singleLineText" },
         { "name": "Door Code", "type": "singleLineText" },
-        { "name": "Check-in Time", "type": "singleLineText", "required": true },
-        { "name": "Check-out Time", "type": "singleLineText", "required": true },
-        { "name": "Max Guests", "type": "number", "required": true },
+        { "name": "Check-in Time", "type": "singleLineText" },
+        { "name": "Check-out Time", "type": "singleLineText" },
+        { "name": "Max Guests", "type": "number" },
         { "name": "House Rules", "type": "multilineText" },
         { "name": "Access Instructions", "type": "longText" },
         { "name": "Departure Instructions", "type": "longText" },
@@ -28,23 +28,23 @@
       "name": "AI Configuration",
       "description": "Instructions pour l'IA",
       "fields": [
-        { "name": "Property", "type": "foreignKey", "references": "Properties", "required": true },
-        { "name": "Type", "type": "singleSelect", "options": ["tone", "knowledge", "rules"], "required": true },
-        { "name": "Content", "type": "longText", "required": true },
-        { "name": "Priority", "type": "number", "required": true },
-        { "name": "Active", "type": "checkbox", "defaultValue": true }
+        { "name": "Property", "type": "foreignKey", "references": "Properties" },
+        { "name": "Type", "type": "singleSelect", "options": ["tone", "knowledge", "rules"] },
+        { "name": "Content", "type": "longText" },
+        { "name": "Priority", "type": "number" },
+        { "name": "Active", "type": "checkbox" }
       ]
     },
     "FAQ": {
       "name": "FAQ",
       "description": "Questions fréquentes",
       "fields": [
-        { "name": "Property", "type": "foreignKey", "references": "Properties", "required": true },
-        { "name": "Question", "type": "singleLineText", "required": true },
-        { "name": "Answer", "type": "longText", "required": true },
-        { "name": "Category", "type": "singleSelect", "options": ["check-in", "check-out", "wifi", "parking", "house-rules", "general"], "required": true },
-        { "name": "Active", "type": "checkbox", "defaultValue": true },
-        { "name": "UseCount", "type": "number", "defaultValue": 0 }
+        { "name": "Property", "type": "foreignKey", "references": "Properties" },
+        { "name": "Question", "type": "singleLineText" },
+        { "name": "Answer", "type": "longText" },
+        { "name": "Category", "type": "singleSelect", "options": ["check-in", "check-out", "wifi", "parking", "house-rules", "general"] },
+        { "name": "Active", "type": "checkbox" },
+        { "name": "UseCount", "type": "number" }
       ]
     }
   }
