@@ -5,7 +5,7 @@ import { conversationService, messageService, propertyService } from '../service
 import ChatMessage from '../components/ChatMessage';
 import type { Message, Property, Conversation } from '../types';
 
-const POLLING_INTERVAL = 3000; // Check for new messages every 3 seconds
+const POLLING_INTERVAL = 3000;
 
 const ConversationDetail: React.FC = () => {
   const { propertyId, conversationId } = useParams();
@@ -30,7 +30,6 @@ const ConversationDetail: React.FC = () => {
         propertyService.getPropertyById(propertyId)
       ]);
 
-      // Only update if messages have changed
       if (JSON.stringify(convData.messages) !== JSON.stringify(conversation?.messages)) {
         setConversation(convData);
       }
@@ -49,12 +48,8 @@ const ConversationDetail: React.FC = () => {
 
   useEffect(() => {
     fetchConversation();
-
-    // Start polling
     pollingRef.current = setInterval(fetchConversation, POLLING_INTERVAL);
-
     return () => {
-      // Cleanup polling on unmount
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
@@ -62,7 +57,6 @@ const ConversationDetail: React.FC = () => {
   }, [fetchConversation]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation?.messages]);
 
@@ -70,7 +64,7 @@ const ConversationDetail: React.FC = () => {
     if (!newMessage.trim() || sending || !conversation) return;
 
     const message: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text: newMessage,
       isUser: true,
       timestamp: new Date(),
@@ -155,7 +149,7 @@ const ConversationDetail: React.FC = () => {
         <div className="space-y-4">
           {conversation.messages.map((message) => (
             <ChatMessage 
-              key={`${message.id}-${message.timestamp.toString()}`} 
+              key={message.id} 
               message={message} 
             />
           ))}
