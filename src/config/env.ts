@@ -1,6 +1,5 @@
 import { z } from 'zod';
 
-// Validation avec zod pour garantir que les variables sont présentes
 const envSchema = z.object({
   airtable: z.object({
     apiKey: z.string().min(1, 'Airtable API key is required'),
@@ -11,38 +10,37 @@ const envSchema = z.object({
   }),
 });
 
-// Fonction pour récupérer les variables d'environnement
 const getEnvVar = (key: string): string => {
   try {
-    // Contexte Vite
+    // Vite environment
     if (typeof import.meta !== 'undefined' && import.meta.env) {
       return import.meta.env[key] || '';
     }
   } catch {
-    // Ignorer si import.meta.env n'est pas disponible
+    // Ignore if import.meta is not available
   }
 
-  // Contexte Node.js (Netlify Functions)
+  // Node.js environment (Netlify Functions)
   if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] || '';
+    // Handle Netlify environment variables (without VITE_ prefix)
+    const netlifyKey = key.replace('VITE_', '');
+    return process.env[key] || process.env[netlifyKey] || '';
   }
 
   return '';
 };
 
-// Variables d'environnement
 export const env = {
   airtable: {
-    apiKey: getEnvVar('AIRTABLE_API_KEY') || getEnvVar('VITE_AIRTABLE_API_KEY'),
-    baseId: getEnvVar('AIRTABLE_BASE_ID') || getEnvVar('VITE_AIRTABLE_BASE_ID'),
+    apiKey: getEnvVar('VITE_AIRTABLE_API_KEY'),
+    baseId: getEnvVar('VITE_AIRTABLE_BASE_ID'),
   },
   openai: {
-    apiKey: getEnvVar('OPENAI_API_KEY') || getEnvVar('VITE_OPENAI_API_KEY'),
+    apiKey: getEnvVar('VITE_OPENAI_API_KEY'),
   },
 };
 
-// Validation des variables d'environnement
-const validateEnv = () => {
+export const validateEnv = () => {
   try {
     envSchema.parse(env);
     console.log('Environment variables are valid.');
