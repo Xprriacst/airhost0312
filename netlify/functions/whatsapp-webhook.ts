@@ -1,6 +1,7 @@
 import { Handler } from '@netlify/functions';
 import { conversationService, propertyService, aiService } from '../../src/services';
 import { whatsappService } from '../../src/services/whatsapp/whatsappService';
+import { extractMessageFromWebhook, type WhatsAppWebhook } from '../../src/services/whatsapp/webhookHandler';
 
 export const handler: Handler = async (event) => {
   // Handle WhatsApp verification challenge
@@ -10,92 +11,65 @@ export const handler: Handler = async (event) => {
     const challenge = event.queryStringParameters?.['hub.challenge'];
 
     if (!mode || !token || !challenge) {
-      return {
-        statusCode: 400,
-        body: 'Missing parameters'
-      };
+      return { statusCode: 400, body: 'Missing parameters' };
     }
 
     const validationResponse = whatsappService.validateWebhook(mode, token, challenge);
     if (validationResponse) {
-      return {
-        statusCode: 200,
-        body: validationResponse
-      };
+      return { statusCode: 200, body: validationResponse };
     }
 
-    return {
-      statusCode: 403,
-      body: 'Invalid verification token'
-    };
+    return { statusCode: 403, body: 'Invalid verification token' };
   }
 
   // Handle incoming messages
-  if (event.httpMethod === 'POST') {
+  if (event.httpMethod === 'POST' && event.body) {
     try {
-      const body = JSON.parse(event.body || '{}');
+      const webhookData = JSON.parse(event.body) as WhatsAppWebhook;
+      const message = extractMessageFromWebhook(webhookData);
       
-      // Extract the message data
-      const entry = body.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const value = changes?.value;
-      
-      if (!value || !value.messages || value.messages.length === 0) {
+      if (!message) {
         return {
           statusCode: 400,
           body: JSON.stringify({ error: 'Invalid message format' })
         };
       }
 
-      const message = value.messages[0];
-      const from = message.from; // Phone number
-      const text = message.text?.body;
+      // Get the sender's WhatsApp number
+      const senderNumber = message.sender;
 
-      // Find the associated property and conversation
-      // This is a simplified example - you'll need to implement your own logic
-      // to match WhatsApp numbers to properties/conversations
-      const properties = await propertyService.getProperties();
-      const property = properties[0]; // For testing, use the first property
+      // Find associated property and conversation
+      const conversations = await conversationService.fetchAllConversations();
+      const conversation = conversations.find(c => c.guestName === senderNumber);
 
-      if (!property) {
-        return {
-          statusCode: 404,
-          body: JSON.stringify({ error: 'Property not found' })
-        };
-      }
-
-      // Create or update conversation
-      const conversations = await conversationService.fetchPropertyConversations(property.id);
-      let conversation = conversations.find(c => c.guestName === from); // Use phone number as guest name for now
-
-      if (!conversation) {
-        conversation = await conversationService.addConversation({
-          Properties: [property.id],
-          'Guest Name': from,
-          'Guest Email': `${from}@whatsapp.com`, // Placeholder email
-          Status: 'Active',
-          Platform: 'whatsapp',
-          Messages: JSON.stringify([{
-            id: Date.now().toString(),
-            text,
-            isUser: false,
-            timestamp: new Date(),
-            sender: from
-          }])
-        });
-      } else {
-        const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
-        messages.push({
-          id: Date.now().toString(),
-          text,
-          isUser: false,
-          timestamp: new Date(),
-          sender: from
-        });
-
+      if (conversation) {
+        // Update existing conversation
+        const messages = [...conversation.messages, message];
         await conversationService.updateConversation(conversation.id, {
           Messages: JSON.stringify(messages)
         });
+
+        // Generate AI response if auto-pilot is enabled
+        const property = await propertyService.getPropertyById(conversation.propertyId);
+        if (property?.autoPilot) {
+          const aiResponse = await aiService.generateResponse(message, property);
+          await whatsappService.sendMessage(senderNumber, aiResponse);
+        }
+      } else {
+        // Create new conversation with first property (temporary solution)
+        const properties = await propertyService.getProperties();
+        const property = properties[0];
+
+        if (property) {
+          await conversationService.addConversation({
+            Properties: [property.id],
+            'Guest Name': senderNumber,
+            'Guest Email': `${senderNumber}@whatsapp.com`,
+            Status: 'Active',
+            Platform: 'whatsapp',
+            Messages: JSON.stringify([message])
+          });
+        }
       }
 
       return {
