@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { propertyService } from '../services';
-import PropertyActions from '../components/PropertyActions';
 import PropertyEditModal from '../components/PropertyEditModal';
 import PropertyDetailsModal from '../components/PropertyDetailsModal';
 
@@ -12,7 +11,6 @@ const Properties: React.FC = () => {
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
   const [detailsProperty, setDetailsProperty] = useState<any | null>(null);
 
-  // Récupère les propriétés au montage
   useEffect(() => {
     fetchProperties();
   }, []);
@@ -51,12 +49,6 @@ const Properties: React.FC = () => {
         setError('Failed to delete property. Please try again.');
       }
     }
-  };
-
-  const handleEdit = (property: any) => {
-    // Quand on clique sur "Edit", on définit la propriété sélectionnée
-    // Ce qui va ouvrir le modal d'édition
-    setSelectedProperty(property);
   };
 
   if (loading) {
@@ -124,17 +116,25 @@ const Properties: React.FC = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="p-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
-                    <p className="text-gray-600">{property.address}</p>
-                  </div>
-                  <PropertyActions 
-                    property={property} 
-                    onDelete={handleDelete}
-                    onEdit={handleEdit}
-                  />
+              <div className="p-6 flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
+                  <p className="text-gray-600">{property.address}</p>
+                </div>
+                <div className="flex gap-4">
+                  {/* Bouton qui redirige directement vers la page config */}
+                  <a
+                    href={`https://dynamic-kashata-78603a.netlify.app/properties/${property.id}/config`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </a>
+                  <button
+                    onClick={() => handleDelete(property.id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
