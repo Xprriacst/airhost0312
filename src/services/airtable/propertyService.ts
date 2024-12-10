@@ -9,9 +9,10 @@ import type { Property } from '../../types';
 export const propertyService = {
   async getProperties(): Promise<Property[]> {
     try {
-      console.log("Fetching properties from Airtable...");
+      console.log("[propertyService] Fetching properties from Airtable...");
       if (!base) {
-        console.warn('Airtable is not configured. Using mock data.');
+        console.warn('[propertyService] Airtable is not configured. Using mock data.');
+        console.log("[propertyService] Mock Properties:", mockProperties);
         return mockProperties;
       }
 
@@ -19,16 +20,21 @@ export const propertyService = {
         .select({ view: 'Grid view' })
         .all();
 
-      console.log("Raw Airtable records:", records);
+      console.log("[propertyService] Raw Airtable records:", records);
 
       const properties = await Promise.all(
         records.map(async (record) => {
+          console.log("[propertyService] Processing record:", record);
           const property = mapRecordToProperty(record);
-          console.log("Mapped property:", property);
+          console.log("[propertyService] Mapped property:", property);
+
           const [aiInstructions, faq] = await Promise.all([
             aiInstructionService.getInstructionsForProperty(property.id),
             faqService.getFAQsForProperty(property.id)
           ]);
+          console.log("[propertyService] AI Instructions:", aiInstructions);
+          console.log("[propertyService] FAQs:", faq);
+
           return {
             ...property,
             aiInstructions,
@@ -37,21 +43,23 @@ export const propertyService = {
         })
       );
 
-      console.log("Final properties list:", properties);
+      console.log("[propertyService] Final properties list:", properties);
       return properties;
     } catch (error) {
-      console.error('Error fetching properties:', error);
+      console.error('[propertyService] Error fetching properties:', error);
       return handleServiceError(error, 'Property.getProperties');
     }
   },
 
   async getPropertyById(id: string): Promise<Property | null> {
     try {
+      console.log(`[propertyService] Fetching property by ID: ${id}`);
       if (!base) {
-        throw new Error('Airtable is not configured');
+        throw new Error('[propertyService] Airtable is not configured');
       }
 
       const record = await base('Properties').find(id);
+      console.log("[propertyService] Raw record:", record);
       const property = mapRecordToProperty(record);
 
       const [aiInstructions, faq] = await Promise.all([
@@ -59,23 +67,27 @@ export const propertyService = {
         faqService.getFAQsForProperty(id)
       ]);
 
+      console.log("[propertyService] AI Instructions:", aiInstructions);
+      console.log("[propertyService] FAQs:", faq);
+
       return {
         ...property,
         aiInstructions,
         faq
       };
     } catch (error) {
+      console.error(`[propertyService] Error fetching property by ID: ${id}`, error);
       return handleServiceError(error, 'Property.getPropertyById');
     }
   },
 
   async updateProperty(id: string, propertyData: Partial<Property>): Promise<Property | null> {
     try {
+      console.log(`[propertyService] Updating property with ID: ${id}`, propertyData);
       if (!base) {
-        throw new Error('Airtable is not configured');
+        throw new Error('[propertyService] Airtable is not configured');
       }
 
-      // Update main property record
       const updatedRecord = await base('Properties').update(id, {
         Name: propertyData.name,
         Address: propertyData.address,
@@ -95,10 +107,10 @@ export const propertyService = {
         'Auto Pilot': propertyData.autoPilot
       });
 
-      console.log("Updated property record:", updatedRecord);
+      console.log("[propertyService] Updated property record:", updatedRecord);
 
-      // Update AI Instructions
       if (propertyData.aiInstructions) {
+        console.log("[propertyService] Updating AI Instructions:", propertyData.aiInstructions);
         await Promise.all(
           propertyData.aiInstructions.map((instruction) =>
             instruction.id
@@ -108,8 +120,8 @@ export const propertyService = {
         );
       }
 
-      // Update FAQs
       if (propertyData.faq) {
+        console.log("[propertyService] Updating FAQs:", propertyData.faq);
         await Promise.all(
           propertyData.faq.map((faq) =>
             faq.id
@@ -121,24 +133,27 @@ export const propertyService = {
 
       return this.getPropertyById(id);
     } catch (error) {
+      console.error(`[propertyService] Error updating property with ID: ${id}`, error);
       return handleServiceError(error, 'Property.updateProperty');
     }
   },
 
   async toggleAutoPilot(id: string, autoPilot: boolean): Promise<Property | null> {
     try {
+      console.log(`[propertyService] Toggling Auto Pilot for property ID: ${id} to ${autoPilot}`);
       if (!base) {
-        throw new Error('Airtable is not configured');
+        throw new Error('[propertyService] Airtable is not configured');
       }
 
       const updatedRecord = await base('Properties').update(id, {
         'Auto Pilot': autoPilot
       });
 
-      console.log("Toggled Auto Pilot for property:", updatedRecord);
+      console.log("[propertyService] Toggled Auto Pilot for property:", updatedRecord);
 
       return mapRecordToProperty(updatedRecord);
     } catch (error) {
+      console.error(`[propertyService] Error toggling Auto Pilot for property ID: ${id}`, error);
       return handleServiceError(error, 'Property.toggleAutoPilot');
     }
   }
