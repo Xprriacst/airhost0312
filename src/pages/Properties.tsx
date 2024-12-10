@@ -19,7 +19,17 @@ const Properties: React.FC = () => {
     try {
       setLoading(true);
       const fetchedProperties = await propertyService.getProperties();
-      setProperties(fetchedProperties);
+
+      // Log des données pour vérifier le champ `id`
+      console.log("Fetched properties:", fetchedProperties);
+
+      // Validation des IDs
+      const validProperties = fetchedProperties.filter((property) => property.id);
+      if (validProperties.length !== fetchedProperties.length) {
+        console.warn("Certaines propriétés ne contiennent pas d'ID valide:", fetchedProperties);
+      }
+
+      setProperties(validProperties);
     } catch (err) {
       console.error('Error fetching properties:', err);
       setError('Failed to load properties. Please try again later.');
@@ -72,21 +82,23 @@ const Properties: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Properties</h1>
         <button
-          onClick={() => setSelectedProperty({
-            name: '',
-            address: '',
-            accessCodes: { wifi: { name: '', password: '' }, door: '' },
-            checkInTime: '',
-            checkOutTime: '',
-            maxGuests: 1,
-            description: '',
-            parkingInfo: '',
-            restaurants: [],
-            fastFood: [],
-            emergencyContacts: [],
-            houseRules: [],
-            amenities: []
-          })}
+          onClick={() =>
+            setSelectedProperty({
+              name: '',
+              address: '',
+              accessCodes: { wifi: { name: '', password: '' }, door: '' },
+              checkInTime: '',
+              checkOutTime: '',
+              maxGuests: 1,
+              description: '',
+              parkingInfo: '',
+              restaurants: [],
+              fastFood: [],
+              emergencyContacts: [],
+              houseRules: [],
+              amenities: []
+            })
+          }
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-5 h-5 mr-2" />
