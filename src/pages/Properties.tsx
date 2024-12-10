@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { propertyService } from '../services';
+import PropertyActions from '../components/PropertyActions';
 import PropertyEditModal from '../components/PropertyEditModal';
 import PropertyDetailsModal from '../components/PropertyDetailsModal';
 
 const Properties: React.FC = () => {
-  const navigate = useNavigate();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<any | null>(null);
-  const [detailsProperty, setDetailsProperty] = useState<any | null>(null); // For showing details
+  const [detailsProperty, setDetailsProperty] = useState<any | null>(null);
 
-  // Fetch properties on mount
+  // Récupère les propriétés au montage
   useEffect(() => {
     fetchProperties();
   }, []);
@@ -32,14 +31,14 @@ const Properties: React.FC = () => {
   };
 
   const handleViewDetails = (property: any) => {
-    setDetailsProperty(property); // Set the property to show in the modal
+    setDetailsProperty(property);
   };
 
   const handleSave = async (updatedProperty: any) => {
     setProperties((prev) =>
       prev.map((p) => (p.id === updatedProperty.id ? updatedProperty : p))
     );
-    setSelectedProperty(null); // Close edit modal
+    setSelectedProperty(null);
   };
 
   const handleDelete = async (propertyId: string) => {
@@ -52,6 +51,12 @@ const Properties: React.FC = () => {
         setError('Failed to delete property. Please try again.');
       }
     }
+  };
+
+  const handleEdit = (property: any) => {
+    // Quand on clique sur "Edit", on définit la propriété sélectionnée
+    // Ce qui va ouvrir le modal d'édition
+    setSelectedProperty(property);
   };
 
   if (loading) {
@@ -75,7 +80,21 @@ const Properties: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Properties</h1>
         <button
-          onClick={() => setSelectedProperty(null)}
+          onClick={() => setSelectedProperty({
+            name: '',
+            address: '',
+            accessCodes: { wifi: { name: '', password: '' }, door: '' },
+            checkInTime: '',
+            checkOutTime: '',
+            maxGuests: 1,
+            description: '',
+            parkingInfo: '',
+            restaurants: [],
+            fastFood: [],
+            emergencyContacts: [],
+            houseRules: [],
+            amenities: []
+          })}
           className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -93,8 +112,7 @@ const Properties: React.FC = () => {
           {properties.map((property) => (
             <div
               key={property.id}
-              className="bg-white rounded-xl shadow-md overflow-hidden cursor-pointer"
-              onClick={() => handleViewDetails(property)} // Open the details modal
+              className="bg-white rounded-xl shadow-md overflow-hidden"
             >
               <div className="relative h-48">
                 <img
@@ -107,24 +125,23 @@ const Properties: React.FC = () => {
                 />
               </div>
               <div className="p-6">
-                <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
-                <p className="text-gray-600">{property.address}</p>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(property.id);
-                  }}
-                  className="text-red-600 hover:underline mt-2 block"
-                >
-                  Delete
-                </button>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">{property.name}</h3>
+                    <p className="text-gray-600">{property.address}</p>
+                  </div>
+                  <PropertyActions 
+                    property={property} 
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                  />
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Details Modal */}
       {detailsProperty && (
         <PropertyDetailsModal
           property={detailsProperty}
@@ -132,7 +149,6 @@ const Properties: React.FC = () => {
         />
       )}
 
-      {/* Edit Modal */}
       {selectedProperty && (
         <PropertyEditModal
           property={selectedProperty}
