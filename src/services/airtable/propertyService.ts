@@ -9,6 +9,7 @@ import type { Property } from '../../types';
 export const propertyService = {
   async getProperties(): Promise<Property[]> {
     try {
+      console.log("Fetching properties from Airtable...");
       if (!base) {
         console.warn('Airtable is not configured. Using mock data.');
         return mockProperties;
@@ -18,9 +19,12 @@ export const propertyService = {
         .select({ view: 'Grid view' })
         .all();
 
+      console.log("Raw Airtable records:", records);
+
       const properties = await Promise.all(
         records.map(async (record) => {
           const property = mapRecordToProperty(record);
+          console.log("Mapped property:", property);
           const [aiInstructions, faq] = await Promise.all([
             aiInstructionService.getInstructionsForProperty(property.id),
             faqService.getFAQsForProperty(property.id)
@@ -33,8 +37,10 @@ export const propertyService = {
         })
       );
 
+      console.log("Final properties list:", properties);
       return properties;
     } catch (error) {
+      console.error('Error fetching properties:', error);
       return handleServiceError(error, 'Property.getProperties');
     }
   },
@@ -89,6 +95,8 @@ export const propertyService = {
         'Auto Pilot': propertyData.autoPilot
       });
 
+      console.log("Updated property record:", updatedRecord);
+
       // Update AI Instructions
       if (propertyData.aiInstructions) {
         await Promise.all(
@@ -126,6 +134,8 @@ export const propertyService = {
       const updatedRecord = await base('Properties').update(id, {
         'Auto Pilot': autoPilot
       });
+
+      console.log("Toggled Auto Pilot for property:", updatedRecord);
 
       return mapRecordToProperty(updatedRecord);
     } catch (error) {
