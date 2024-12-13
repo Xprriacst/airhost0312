@@ -24,19 +24,14 @@ const mapAirtableToConversation = (record: any): Conversation => {
   };
 };
 
-const conversationService = {
+export const conversationService = {
   async fetchConversationById(conversationId: string): Promise<Conversation> {
     try {
       if (!base) throw new Error('Airtable is not configured');
       if (!conversationId) throw new Error('Conversation ID is required');
 
-      console.log('Fetching conversation:', conversationId);
       const record = await base('Conversations').find(conversationId);
-
-      if (!record) {
-        throw new Error(`Conversation not found: ${conversationId}`);
-      }
-
+      if (!record) throw new Error(`Conversation not found: ${conversationId}`);
       return mapAirtableToConversation(record);
     } catch (error) {
       console.error('Error fetching conversation:', error);
@@ -49,7 +44,6 @@ const conversationService = {
       if (!base) throw new Error('Airtable is not configured');
       if (!propertyId) throw new Error('Property ID is required');
 
-      console.log('Fetching conversations for property:', propertyId);
       const records = await base('Conversations')
         .select({
           filterByFormula: `SEARCH("${propertyId}", {Properties})`,
@@ -78,7 +72,6 @@ const conversationService = {
       if (!base) throw new Error('Airtable is not configured');
       if (!conversationId) throw new Error('Conversation ID is required');
 
-      console.log('Updating conversation:', conversationId);
       const updatedRecord = await base('Conversations').update(conversationId, data);
       return mapAirtableToConversation(updatedRecord);
     } catch (error) {
@@ -86,6 +79,15 @@ const conversationService = {
       throw error;
     }
   },
-};
 
-export default conversationService;
+  async addConversation(data: any): Promise<Conversation> {
+    try {
+      if (!base) throw new Error('Airtable is not configured');
+      const record = await base('Conversations').create(data);
+      return mapAirtableToConversation(record);
+    } catch (error) {
+      console.error('Error adding new conversation:', error);
+      throw error;
+    }
+  },
+};
