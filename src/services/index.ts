@@ -7,5 +7,5 @@ export {
   propertyService,
   conversationService,
   messageService,
-  aiService
+  aiService,
 };
