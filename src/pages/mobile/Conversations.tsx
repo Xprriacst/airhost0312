@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { conversationService } from '../../services';
-import ConversationList from '../../components/mobile/ConversationList';
+import { ConversationList } from '../../components/mobile';
 import type { Conversation } from '../../types';
 
 const MobileConversations: React.FC = () => {
@@ -10,17 +10,20 @@ const MobileConversations: React.FC = () => {
   const { propertyId } = useParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchConversations = async () => {
       try {
         setIsLoading(true);
+        setError(null);
         const data = propertyId 
           ? await conversationService.fetchPropertyConversations(propertyId)
           : await conversationService.fetchAllConversations();
         setConversations(data);
-      } catch (error) {
-        console.error('Error fetching conversations:', error);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
+        setError('Impossible de charger les conversations');
       } finally {
         setIsLoading(false);
       }
@@ -50,11 +53,17 @@ const MobileConversations: React.FC = () => {
       </header>
 
       <main className="flex-1 overflow-y-auto">
-        <ConversationList
-          conversations={conversations}
-          onSelectConversation={handleSelectConversation}
-          isLoading={isLoading}
-        />
+        {error ? (
+          <div className="p-4 text-center text-red-600 bg-red-50">
+            {error}
+          </div>
+        ) : (
+          <ConversationList
+            conversations={conversations}
+            onSelectConversation={handleSelectConversation}
+            isLoading={isLoading}
+          />
+        )}
       </main>
     </div>
   );
