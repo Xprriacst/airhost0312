@@ -24,7 +24,7 @@ const mapAirtableToConversation = (record: any): Conversation => {
   };
 };
 
-const conversationService = {
+export const conversationService = {
   async fetchConversationById(conversationId: string): Promise<Conversation> {
     try {
       if (!base) throw new Error('Airtable is not configured');
@@ -91,5 +91,3 @@ const conversationService = {
     }
   },
 };
-
-export default conversationService;
