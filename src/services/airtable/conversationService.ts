@@ -20,11 +20,11 @@ const mapAirtableToConversation = (record: any): Conversation => {
     guestName: record.get('Guest Name') || '',
     checkIn: record.get('Check-in Date') || '',
     checkOut: record.get('Check-out Date') || '',
-    messages: parseMessages(record.get('Messages'))
+    messages: parseMessages(record.get('Messages')),
   };
 };
 
-export const conversationService = {
+const conversationService = {
   async fetchConversationById(conversationId: string): Promise<Conversation> {
     try {
       if (!base) throw new Error('Airtable is not configured');
@@ -32,7 +32,7 @@ export const conversationService = {
 
       console.log('Fetching conversation:', conversationId);
       const record = await base('Conversations').find(conversationId);
-      
+
       if (!record) {
         throw new Error(`Conversation not found: ${conversationId}`);
       }
@@ -58,7 +58,7 @@ export const conversationService = {
             'Guest Name',
             'Messages',
             'Check-in Date',
-            'Check-out Date'
+            'Check-out Date',
           ],
         })
         .all();
@@ -71,7 +71,7 @@ export const conversationService = {
   },
 
   async updateConversation(
-    conversationId: string, 
+    conversationId: string,
     data: { Messages?: string }
   ): Promise<Conversation> {
     try {
@@ -85,5 +85,7 @@ export const conversationService = {
       console.error('Error updating conversation:', error);
       throw error;
     }
-  }
+  },
 };
+
+export default conversationService;
