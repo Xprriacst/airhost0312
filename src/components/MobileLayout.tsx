@@ -75,7 +75,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <Home className="w-5 h-5" />
-              <span>Propriétés</span>
+              <span>Properties</span>
             </button>
 
             <button
@@ -91,7 +91,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <AlertTriangle className="w-5 h-5" />
-              <span>Cas d'urgence</span>
+              <span>Emergency Cases</span>
             </button>
 
             <button
@@ -107,7 +107,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <SettingsIcon className="w-5 h-5" />
-              <span>Paramètres</span>
+              <span>Settings</span>
             </button>
           </nav>
         </div>
@@ -118,7 +118,7 @@ const MobileLayout: React.FC = () => {
         <Routes>
           <Route path="/" element={<Properties />} />
           <Route path="/conversations" element={<MobileConversations />} />
-          <Route path="/conversations/:propertyId" element={<MobileConversations />} />
+          <Route path="/properties/:propertyId/conversations" element={<MobileConversations />} />
           <Route path="/chat/:conversationId" element={<MobileChat />} />
           <Route path="/emergency" element={<EmergencyCases />} />
           <Route path="/sandbox" element={<ChatSandbox />} />
