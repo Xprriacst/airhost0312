@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, Home, MessageSquare, Settings as SettingsIcon, TestTube, AlertTriangle, X, ArrowLeft } from 'lucide-react';
 import Properties from '../pages/desktop/Properties';
-import Conversations from '../pages/Conversations';
+import MobileConversations from '../pages/mobile/Conversations';
 import MobileChat from '../pages/MobileChat';
 import Settings from '../pages/Settings';
 import ChatSandbox from '../pages/ChatSandbox';
@@ -22,21 +22,20 @@ const MobileLayout: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b px-4 py-3 flex items-center gap-4">
         {showBackButton ? (
           <button
             onClick={() => navigate(-1)}
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
-            <ArrowLeft className="w-6 h-6 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
         ) : (
           <button
             onClick={() => setIsDrawerOpen(true)}
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
-            <Menu className="w-6 h-6 text-gray-600" />
+            <Menu className="w-5 h-5 text-gray-600" />
           </button>
         )}
         <h1 className="text-xl font-bold text-gray-900">AirHost</h1>
@@ -76,7 +75,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <Home className="w-5 h-5" />
-              <span>Propriétés</span>
+              <span>Properties</span>
             </button>
 
             <button
@@ -92,7 +91,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <AlertTriangle className="w-5 h-5" />
-              <span>Cas d'urgence</span>
+              <span>Emergency Cases</span>
             </button>
 
             <button
@@ -108,7 +107,7 @@ const MobileLayout: React.FC = () => {
               className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100"
             >
               <SettingsIcon className="w-5 h-5" />
-              <span>Paramètres</span>
+              <span>Settings</span>
             </button>
           </nav>
         </div>
@@ -118,8 +117,8 @@ const MobileLayout: React.FC = () => {
       <main className="flex-1 overflow-y-auto">
         <Routes>
           <Route path="/" element={<Properties />} />
-          <Route path="/conversations" element={<Conversations />} />
-          <Route path="/conversations/:propertyId" element={<Conversations />} />
+          <Route path="/conversations" element={<MobileConversations />} />
+          <Route path="/properties/:propertyId/conversations" element={<MobileConversations />} />
           <Route path="/chat/:conversationId" element={<MobileChat />} />
           <Route path="/emergency" element={<EmergencyCases />} />
           <Route path="/sandbox" element={<ChatSandbox />} />
